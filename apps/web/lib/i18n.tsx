@@ -1,11 +1,11 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { catalog, type Locale } from '@komuta/shared';
+import { catalog, type Locale, type Messages } from '@komuta/shared';
 
 const LOCALE_KEY = 'komuta_locale';
 
-type Catalog = (typeof catalog)['tr'];
+type Catalog = Messages;
 
 interface I18nContextValue {
   locale: Locale;
