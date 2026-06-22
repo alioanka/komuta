@@ -16,6 +16,8 @@ import { OrgModule } from './org/org.module.js';
 import { AccountingModule } from './accounting/accounting.module.js';
 import { UsersModule } from './users/users.module.js';
 import { MappingsModule } from './mappings/mappings.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
+import { MessagesModule } from './messages/messages.module.js';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { MappingsModule } from './mappings/mappings.module.js';
     AccountingModule,
     UsersModule,
     MappingsModule,
+    NotificationsModule,
+    MessagesModule,
   ],
   controllers: [HealthController],
   providers: [

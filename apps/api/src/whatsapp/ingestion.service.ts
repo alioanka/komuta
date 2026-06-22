@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { extractMessage, normalizeTr } from '@komuta/money';
 import {
   decideResolution,
@@ -10,6 +10,7 @@ import {
 import { DEFAULT_TIMEZONE } from '@komuta/config';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { businessDateInTz, dateOnly } from '../common/date.util.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 export interface InboundMessage {
   waMessageId: string;
@@ -24,7 +25,11 @@ export interface InboundMessage {
 export class IngestionService {
   private readonly logger = new Logger(IngestionService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => NotificationsService))
+    private readonly notifications: NotificationsService,
+  ) {}
 
   /** Process one inbound WhatsApp message end-to-end. Idempotent by waMessageId. */
   async handleInbound(msg: InboundMessage): Promise<ResolutionDecision> {
@@ -129,8 +134,40 @@ export class IngestionService {
       });
     }
 
+    // 10. Alert managers for cases that need human attention.
+    await this.notify(msg, decision).catch((err) =>
+      this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`),
+    );
+
     this.logger.log(`Inbound ${msg.waMessageId}: ${decision.status} (${decision.reason})`);
     return decision;
+  }
+
+  private async notify(msg: InboundMessage, decision: ResolutionDecision): Promise<void> {
+    if (!this.notifications?.dispatch) return;
+    const from = msg.fromPhone;
+    if (decision.status === 'NEEDS_STORE_ID') {
+      await this.notifications.dispatch({
+        event: 'UNMAPPED_SENDER',
+        title: 'Eşleşmeyen gönderen',
+        body: `${from} numarasından mağaza kodu olmadan ciro geldi: "${msg.body}"`,
+        payload: { fromPhone: from },
+      });
+    } else if (decision.status === 'NEEDS_CONFIRMATION') {
+      await this.notifications.dispatch({
+        event: 'NEEDS_CONFIRMATION',
+        title: 'Onay gerekiyor',
+        body: `${from} için gönderen↔mağaza eşleşmesi onay bekliyor.`,
+        payload: { fromPhone: from, outletId: decision.outletId },
+      });
+    } else if (decision.status === 'UNPARSEABLE') {
+      await this.notifications.dispatch({
+        event: 'PARSE_FAILED',
+        title: 'Tutar okunamadı',
+        body: `${from} mesajı çözümlenemedi: "${msg.body}"`,
+        payload: { fromPhone: from },
+      });
+    }
   }
 
   /** Build outlet/employee candidate lists and resolve a store from the prefix tokens. */

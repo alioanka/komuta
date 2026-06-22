@@ -13,7 +13,9 @@ const d = hasDb ? describe : describe.skip;
 
 const prisma = new PrismaClient();
 // IngestionService only uses PrismaClient methods → structural compatibility.
-const ingestion = new IngestionService(prisma as never);
+// Notifications are stubbed (dispatch is a no-op) for the isolated e2e test.
+const notificationsStub = { dispatch: async () => ({ channels: [] }) };
+const ingestion = new IngestionService(prisma as never, notificationsStub as never);
 
 let counter = 0;
 const wa = () => `wamid.TEST.${Date.now()}.${counter++}`;
