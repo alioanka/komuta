@@ -33,6 +33,18 @@ importers:
         specifier: ^8.62.0
         version: 8.62.0(eslint@9.39.4)(typescript@5.9.3)
 
+  packages/config:
+    devDependencies:
+      eslint:
+        specifier: ^9.7.0
+        version: 9.39.4
+      typescript:
+        specifier: ^5.5.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.5
+        version: 2.1.9(@types/node@20.19.43)
+
   packages/money:
     dependencies:
       decimal.js:
@@ -42,6 +54,28 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^2.0.5
         version: 2.1.9(vitest@2.1.9(@types/node@20.19.43))
+      eslint:
+        specifier: ^9.7.0
+        version: 9.39.4
+      typescript:
+        specifier: ^5.5.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.5
+        version: 2.1.9(@types/node@20.19.43)
+
+  packages/shared:
+    dependencies:
+      '@komuta/config':
+        specifier: workspace:*
+        version: link:../config
+      '@komuta/money':
+        specifier: workspace:*
+        version: link:../money
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
+    devDependencies:
       eslint:
         specifier: ^9.7.0
         version: 9.39.4
@@ -1219,6 +1253,9 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+
 snapshots:
 
   '@ampproject/remapping@2.3.0':
@@ -2291,3 +2328,5 @@ snapshots:
       strip-ansi: 7.2.0
 
   yocto-queue@0.1.0: {}
+
+  zod@3.25.76: {}
