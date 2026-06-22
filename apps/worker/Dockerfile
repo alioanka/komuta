@@ -20,14 +20,15 @@ WORKDIR /app
 FROM base AS deps
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json ./
 COPY packages ./packages
-COPY prisma ./prisma
+# The Prisma schema lives in apps/api/prisma; the worker shares the generated client.
+COPY apps/api ./apps/api
 COPY apps/worker ./apps/worker
 RUN pnpm install --frozen-lockfile
 
 # ---- build ----
 FROM deps AS build
-# The worker shares the Prisma client with the api.
-RUN pnpm --filter @komuta/worker prisma generate || true
+# Generate the shared Prisma client (from the api schema) into node_modules.
+RUN pnpm --filter @komuta/api prisma generate
 RUN pnpm turbo run build --filter=@komuta/worker
 RUN pnpm --filter @komuta/worker deploy --prod --legacy /prod/worker
 

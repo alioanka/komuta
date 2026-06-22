@@ -25,8 +25,7 @@ FROM base AS deps
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json ./
 # Shared workspace packages the api depends on.
 COPY packages ./packages
-# Root-level prisma schema/seed.
-COPY prisma ./prisma
+# The Prisma schema + seed live in apps/api/prisma (copied with the app below).
 COPY apps/api ./apps/api
 RUN pnpm install --frozen-lockfile
 
