@@ -1,0 +1,476 @@
+// Komuta — Prisma schema (PostgreSQL 16).
+// Mirrors the domain model in the brief §5. Enums are kept in sync with
+// packages/shared/src/enums.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --------------------------------------------------------------------------
+// Enums
+// --------------------------------------------------------------------------
+
+enum OutletType {
+  SCHOOL_CANTEEN
+  UNIVERSITY_CANTEEN
+  CANTEEN
+  REFECTORY
+  RESTAURANT
+  FACTORY
+  CAFE
+}
+
+enum MappingStatus {
+  ACTIVE
+  PENDING
+  BLOCKED
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  ACCOUNTANT
+  MANAGER
+  VIEWER
+}
+
+enum EntrySource {
+  WHATSAPP
+  MANUAL
+  IMPORT
+}
+
+enum EntryStatus {
+  CONFIRMED
+  PENDING_REVIEW
+  REJECTED
+  SUPERSEDED
+}
+
+enum MessageDirection {
+  IN
+  OUT
+}
+
+enum ResolutionStatus {
+  MAPPED
+  NEEDS_STORE_ID
+  NEEDS_CONFIRMATION
+  AMBIGUOUS
+  UNPARSEABLE
+  DUPLICATE
+}
+
+enum TemplateCategory {
+  MARKETING
+  UTILITY
+  AUTHENTICATION
+}
+
+enum TemplateStatus {
+  APPROVED
+  PENDING
+  REJECTED
+}
+
+enum NotificationChannel {
+  INAPP
+  TELEGRAM
+  WHATSAPP
+}
+
+enum NotificationEvent {
+  MISSING_REVENUE
+  UNMAPPED_SENDER
+  NEEDS_CONFIRMATION
+  PARSE_FAILED
+  DAILY_SUMMARY
+  ANOMALY
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+// --------------------------------------------------------------------------
+// Org structure
+// --------------------------------------------------------------------------
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  brands     Brand[]
+  outlets    Outlet[]
+  userScopes UserScope[]
+}
+
+model Brand {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  company Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  outlets Outlet[]
+
+  @@index([companyId])
+}
+
+model Outlet {
+  id                 String     @id @default(cuid())
+  companyId          String
+  brandId            String?
+  name               String
+  code               String     @unique
+  type               OutletType
+  city               String?
+  campus             String?
+  isActive           Boolean    @default(true)
+  expectsDailyRevenue Boolean   @default(true)
+  reportingTimezone  String     @default("Europe/Istanbul")
+  createdAt          DateTime   @default(now())
+
+  company           Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  brand             Brand?              @relation(fields: [brandId], references: [id])
+  aliases           OutletAlias[]
+  employees         Employee[]
+  phoneMappings     PhoneMapping[]
+  phoneOutletLinks  PhoneOutletLink[]
+  revenueEntries    RevenueEntry[]
+  inventory         InventorySnapshot[]
+  payroll           PayrollEntry[]
+  purchases         PurchaseEntry[]
+  studentCounts     StudentCount[]
+  headcounts        HeadcountCorrection[]
+  userScopes        UserScope[]
+
+  @@index([companyId])
+  @@index([brandId])
+}
+
+model OutletAlias {
+  id              String @id @default(cuid())
+  outletId        String
+  alias           String
+  normalizedAlias String
+
+  outlet Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@unique([outletId, normalizedAlias])
+  @@index([normalizedAlias])
+}
+
+model Employee {
+  id             String  @id @default(cuid())
+  outletId       String?
+  fullName       String
+  normalizedName String
+  isActive       Boolean @default(true)
+  createdAt      DateTime @default(now())
+
+  outlet        Outlet?        @relation(fields: [outletId], references: [id])
+  phoneMappings PhoneMapping[]
+
+  @@index([normalizedName])
+  @@index([outletId])
+}
+
+// --------------------------------------------------------------------------
+// Phone mapping
+// --------------------------------------------------------------------------
+
+model PhoneMapping {
+  id         String        @id @default(cuid())
+  phoneE164  String        @unique
+  outletId   String?
+  employeeId String?
+  status     MappingStatus @default(PENDING)
+  lastInboundAt DateTime?
+  createdAt  DateTime      @default(now())
+
+  outlet   Outlet?   @relation(fields: [outletId], references: [id])
+  employee Employee? @relation(fields: [employeeId], references: [id])
+  links    PhoneOutletLink[]
+
+  @@index([phoneE164])
+  @@index([status])
+}
+
+// Optional many-to-many: one phone reports for several outlets.
+model PhoneOutletLink {
+  id        String @id @default(cuid())
+  mappingId String
+  outletId  String
+
+  mapping PhoneMapping @relation(fields: [mappingId], references: [id], onDelete: Cascade)
+  outlet  Outlet       @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@unique([mappingId, outletId])
+}
+
+// --------------------------------------------------------------------------
+// Users / RBAC
+// --------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         Role     @default(VIEWER)
+  isActive     Boolean  @default(true)
+  lastLoginAt  DateTime?
+  failedLogins Int      @default(0)
+  lockedUntil  DateTime?
+  totpSecret   String?
+  totpEnabled  Boolean  @default(false)
+  grantedPermissions String[] @default([])
+  revokedPermissions String[] @default([])
+  createdAt    DateTime @default(now())
+
+  scopes        UserScope[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
+  refreshTokens RefreshToken[]
+}
+
+model UserScope {
+  id        String  @id @default(cuid())
+  userId    String
+  companyId String?
+  outletId  String?
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  outlet  Outlet?  @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// --------------------------------------------------------------------------
+// Operational data
+// --------------------------------------------------------------------------
+
+model RevenueEntry {
+  id              String      @id @default(cuid())
+  outletId        String
+  businessDate    DateTime    @db.Date
+  amount          Decimal     @db.Decimal(14, 2)
+  currency        String      @default("TRY")
+  source          EntrySource @default(WHATSAPP)
+  rawMessageId    String?
+  enteredByUserId String?
+  status          EntryStatus @default(CONFIRMED)
+  note            String?
+  createdAt       DateTime    @default(now())
+
+  outlet Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@index([outletId, businessDate])
+  @@index([status])
+}
+
+model InventorySnapshot {
+  id              String   @id @default(cuid())
+  outletId        String
+  asOfDate        DateTime @db.Date
+  stockValue      Decimal  @db.Decimal(14, 2)
+  source          EntrySource @default(MANUAL)
+  enteredByUserId String?
+  note            String?
+  createdAt       DateTime @default(now())
+
+  outlet Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@index([outletId, asOfDate])
+}
+
+model PayrollEntry {
+  id              String   @id @default(cuid())
+  outletId        String
+  periodMonth     String // YYYY-MM
+  totalSalary     Decimal  @db.Decimal(14, 2)
+  employeeCount   Int?
+  enteredByUserId String?
+  createdAt       DateTime @default(now())
+
+  outlet Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@unique([outletId, periodMonth])
+}
+
+model PurchaseEntry {
+  id              String   @id @default(cuid())
+  outletId        String
+  periodMonth     String
+  amount          Decimal  @db.Decimal(14, 2)
+  enteredByUserId String?
+  note            String?
+  createdAt       DateTime @default(now())
+
+  outlet Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@unique([outletId, periodMonth])
+}
+
+model StudentCount {
+  id              String   @id @default(cuid())
+  outletId        String
+  periodMonth     String
+  ortaokul        Int      @default(0)
+  lise            Int      @default(0)
+  enteredByUserId String?
+  createdAt       DateTime @default(now())
+
+  outlet Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@unique([outletId, periodMonth])
+}
+
+model HeadcountCorrection {
+  id              String   @id @default(cuid())
+  outletId        String
+  periodMonth     String
+  employeeCount   Int
+  enteredByUserId String?
+  reason          String?
+  createdAt       DateTime @default(now())
+
+  outlet Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+
+  @@unique([outletId, periodMonth])
+}
+
+// --------------------------------------------------------------------------
+// WhatsApp / messaging
+// --------------------------------------------------------------------------
+
+model WhatsAppMessage {
+  id               String           @id @default(cuid())
+  waMessageId      String           @unique
+  direction        MessageDirection
+  fromPhone        String
+  toPhone          String
+  body             String
+  type             String           @default("text")
+  status           String?
+  parsedAmount     Decimal?         @db.Decimal(14, 2)
+  resolvedOutletId String?
+  resolutionStatus ResolutionStatus?
+  rawPayload       Json?
+  createdAt        DateTime         @default(now())
+
+  @@index([waMessageId])
+  @@index([fromPhone])
+  @@index([direction])
+}
+
+model MessageTemplate {
+  id              String           @id @default(cuid())
+  name            String           @unique
+  metaTemplateName String
+  language        String           @default("tr")
+  category        TemplateCategory @default(UTILITY)
+  bodyVariables   Json?
+  status          TemplateStatus   @default(PENDING)
+  createdAt       DateTime         @default(now())
+}
+
+model OutboundQueueItem {
+  id              String   @id @default(cuid())
+  toPhone         String
+  body            String?
+  templateName    String?
+  templateVars    Json?
+  useTemplate     Boolean  @default(false)
+  windowOpen      Boolean  @default(false)
+  status          String   @default("QUEUED")
+  attempts        Int      @default(0)
+  lastError       String?
+  createdAt       DateTime @default(now())
+
+  @@index([status])
+}
+
+// --------------------------------------------------------------------------
+// Notifications & settings
+// --------------------------------------------------------------------------
+
+model NotificationRule {
+  id                    String              @id @default(cuid())
+  name                  String
+  event                 NotificationEvent
+  channels              NotificationChannel[]
+  targetUserIds         String[]            @default([])
+  targetTelegramChatIds String[]            @default([])
+  scheduleCron          String?
+  isActive              Boolean             @default(true)
+  createdAt             DateTime            @default(now())
+}
+
+model Notification {
+  id      String              @id @default(cuid())
+  userId  String?
+  channel NotificationChannel
+  event   NotificationEvent
+  title   String
+  body    String
+  payload Json?
+  readAt  DateTime?
+  sentAt  DateTime?
+  status  NotificationStatus  @default(PENDING)
+  createdAt DateTime          @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  action      String
+  entity      String
+  entityId    String?
+  before      Json?
+  after       Json?
+  ip          String?
+  createdAt   DateTime @default(now())
+
+  actor User? @relation(fields: [actorUserId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([actorUserId])
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}

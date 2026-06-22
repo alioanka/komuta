@@ -1,0 +1,49 @@
+# ----------------------------------------------------------------------------
+# Komuta — LOCAL DEVELOPMENT infrastructure ONLY.
+#
+# Spins up just the backing stores (PostgreSQL + Redis) so you can run the
+# apps directly on the host with `pnpm dev`. No app services are defined here.
+#
+#   docker compose -f docker-compose.dev.yml up -d
+#
+# These match the defaults in .env.example:
+#   DATABASE_URL=postgresql://komuta:komuta@localhost:5432/komuta?schema=public
+#   REDIS_URL=redis://localhost:6379
+# ----------------------------------------------------------------------------
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: komuta-dev-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: komuta
+      POSTGRES_PASSWORD: komuta
+      POSTGRES_DB: komuta
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U komuta -d komuta"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: komuta-dev-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+  redisdata:

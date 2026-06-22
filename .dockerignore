@@ -1,0 +1,23 @@
+# Keep build contexts small and never ship secrets or local build artifacts.
+node_modules
+**/node_modules
+.next
+**/.next
+dist
+**/dist
+.turbo
+**/.turbo
+.git
+.gitignore
+coverage
+**/coverage
+**/.env
+.env
+.env.*
+!.env.example
+npm-debug.log*
+pnpm-debug.log*
+Dockerfile
+**/Dockerfile
+.dockerignore
+backups

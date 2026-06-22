@@ -20,6 +20,16 @@
     "db:generate": "pnpm --filter @komuta/api prisma generate",
     "prepare": "husky || true"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "@prisma/client",
+      "@prisma/engines",
+      "argon2",
+      "esbuild",
+      "prisma"
+    ]
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^20.14.0",
