@@ -60,6 +60,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Apply migrations + seed (for API e2e tests)
+        run: |
+          pnpm db:deploy
+          pnpm db:seed
+
       - name: Typecheck
         run: pnpm typecheck
 
