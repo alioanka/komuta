@@ -1,7 +1,6 @@
-import type { catalog } from '@komuta/shared';
-import type { OutletType } from '@komuta/shared';
+import type { Messages, OutletType } from '@komuta/shared';
 
-type Catalog = (typeof catalog)['tr'];
+type Catalog = Messages;
 
 /** Outlet type → human label, reusing catalog.domain keys where they map. */
 export function outletTypeLabel(type: OutletType, t: Catalog): string {

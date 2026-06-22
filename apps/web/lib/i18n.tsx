@@ -30,7 +30,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo<I18nContextValue>(
-    () => ({ locale, setLocale, t: catalog[locale] }),
+    () => ({ locale, setLocale, t: catalog[locale] as Messages }),
     [locale, setLocale],
   );
 
