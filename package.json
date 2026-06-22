@@ -1,0 +1,33 @@
+{
+  "name": "komuta",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "db:migrate": "pnpm --filter @komuta/api prisma migrate dev",
+    "db:deploy": "pnpm --filter @komuta/api prisma migrate deploy",
+    "db:seed": "pnpm --filter @komuta/api prisma db seed",
+    "db:generate": "pnpm --filter @komuta/api prisma generate",
+    "prepare": "husky || true"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^20.14.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.3.3",
+    "turbo": "^2.0.6",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.62.0"
+  }
+}

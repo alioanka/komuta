@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+
+# Prisma generated client
+packages/**/generated/
+apps/**/generated/
+node_modules/.prisma/
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# Testing
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Docker volumes / data
+docker-data/
+pgdata/
+redisdata/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# Certbot / TLS material
+infra/certbot/conf/
+infra/certbot/www/
+*.pem
