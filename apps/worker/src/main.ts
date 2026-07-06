@@ -18,13 +18,26 @@ function redisConnection(): ConnectionOptions {
   return {
     host: url.hostname,
     port: Number(url.port || 6379),
-    ...(url.password ? { password: url.password } : {}),
+    ...(url.username ? { username: decodeURIComponent(url.username) } : {}),
+    ...(url.password ? { password: decodeURIComponent(url.password) } : {}),
   };
 }
 
 function cutoffCron(): string {
-  const [h, m] = env.REPORTING_CUTOFF_LOCAL.split(':');
-  return `${Number(m ?? 0)} ${Number(h ?? 21)} * * *`;
+  // Guard against malformed REPORTING_CUTOFF_LOCAL ("2100", "25:99", "") —
+  // an out-of-range value would produce an invalid cron and break the
+  // repeatable job silently. Fall back to the 21:00 default.
+  const match = /^(\d{1,2}):(\d{2})$/.exec(env.REPORTING_CUTOFF_LOCAL.trim());
+  let h = match ? Number(match[1]) : NaN;
+  let m = match ? Number(match[2]) : NaN;
+  if (!Number.isInteger(h) || h < 0 || h > 23 || !Number.isInteger(m) || m < 0 || m > 59) {
+    console.warn(
+      `[worker] invalid REPORTING_CUTOFF_LOCAL "${env.REPORTING_CUTOFF_LOCAL}" — using 21:00`,
+    );
+    h = 21;
+    m = 0;
+  }
+  return `${m} ${h} * * *`;
 }
 
 async function main(): Promise<void> {
