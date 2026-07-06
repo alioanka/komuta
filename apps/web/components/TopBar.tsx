@@ -4,6 +4,7 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { Button, cn } from '@/components/ui';
 import { IconMenu, IconLogout } from '@/components/icons';
+import { NotificationsBell } from '@/components/NotificationsBell';
 import type { Locale } from '@komuta/shared';
 
 function roleLabel(role: string): string {
@@ -47,6 +48,8 @@ export function TopBar({
         </h1>
         {subtitle && <p className="hidden truncate text-xs text-slate-400 sm:block">{subtitle}</p>}
       </div>
+
+      <NotificationsBell />
 
       {/* Language toggle */}
       <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5 text-xs font-semibold">
