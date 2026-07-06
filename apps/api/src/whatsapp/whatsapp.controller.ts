@@ -9,6 +9,7 @@ import {
   HttpCode,
   Logger,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { Public } from '../common/public.decorator.js';
 import { WhatsAppService } from './whatsapp.service.js';
@@ -46,6 +47,9 @@ export class WhatsAppController {
   }
 
   @Public()
+  // Meta batches + retries can burst well above the global default; keep a
+  // sane per-IP ceiling without dropping legitimate webhook deliveries.
+  @Throttle({ default: { limit: 600, ttl: 60_000 } })
   @Post()
   @HttpCode(200)
   receive(@Req() req: Request, @Body() body: unknown, @Res({ passthrough: true }) res: Response) {

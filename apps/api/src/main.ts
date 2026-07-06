@@ -11,6 +11,10 @@ async function bootstrap(): Promise<void> {
   const env = loadEnv();
   const app = await NestFactory.create(AppModule, { bufferLogs: false });
 
+  // The API sits behind Nginx: trust the first proxy hop so req.ip (and thus
+  // per-client rate limiting) uses the real client IP, not the proxy's.
+  (app.getHttpAdapter().getInstance() as express.Express).set('trust proxy', 1);
+
   // Capture the raw body for WhatsApp HMAC verification.
   app.use(
     express.json({

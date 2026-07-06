@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post, Req, Res, HttpCode } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { loginSchema, changePasswordSchema } from '@komuta/shared';
 import { AuthService } from './auth.service.js';
@@ -26,6 +27,7 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } }) // brute-force guard
   @Post('login')
   @HttpCode(200)
   async login(
@@ -39,6 +41,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Post('refresh')
   @HttpCode(200)
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
