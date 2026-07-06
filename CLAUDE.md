@@ -59,15 +59,24 @@ flowchart LR
 ### WhatsApp pipeline flow
 1. Meta POSTs to `/webhooks/whatsapp`. The API verifies `X-Hub-Signature-256`
    (HMAC with `META_APP_SECRET`), responds **200 immediately**, then processes
-   in the background. Processing is **idempotent** (dedupe by `waMessageId`).
-2. `extractMessage(body)` → amount + prefix tokens.
+   in the background. Processing is **idempotent** (dedupe by `waMessageId`;
+   concurrent duplicates are caught via the unique constraint / P2002).
+   When `WHATSAPP_PHONE_NUMBER_ID` is set, messages whose
+   `metadata.phone_number_id` differs are skipped (shared-WABA filtering).
+2. `extractMessage(body)` → amount + prefix tokens (WhatsApp formatting chars
+   `*_~()` stripped; negative amounts rejected).
 3. Sender phone → `PhoneMapping` (ACTIVE) → mapped outlet ids.
 4. `resolveStoreFromTokens(prefix, outlets, employees)` → store from code/alias/
-   fuzzy/employee.
+   token-subset alias/fuzzy/employee.
 5. `decideResolution(...)` applies the §6.4 decision table → status + action.
+   `senderBlocked` (BLOCKED `PhoneMapping`) short-circuits to the **BLOCKED**
+   `ResolutionStatus`: log only — no revenue, no pending mapping, no alert.
+   AMBIGUOUS and NEEDS_* cases dispatch manager alerts.
 6. Persist `WhatsAppMessage`, update 24h window, store `RevenueEntry`
    (CONFIRMED supersedes the prior confirmed entry for that outlet/day), create
    a PENDING mapping for unknown→resolvable senders, and dispatch alerts.
+   Mapping approval (`POST /mappings/approve`) confirms only entries that
+   originated from the approved sender's own messages.
 
 ## Commands
 
@@ -112,6 +121,11 @@ per-user grants/revokes and `UserScope` (company/outlet) enforced on queries.
 - **MANAGER** — read + approve mappings + send messages, scoped.
 - **VIEWER** — read-only, scoped.
 
+`canAssignRole(actor, target)` gates `POST /users`: the target role may never
+outrank the actor's, and only an OWNER can create another OWNER. WhatsApp
+message templates are managed via `GET/POST /templates` (+ `POST
+/templates/:id/status`), guarded by `template:manage` (OWNER/ADMIN).
+
 ## Adding a new company / outlet
 - API: `POST /companies` (perm `company:create`), `POST /companies/brand`,
   `POST /outlets` (`outlet:create`), `POST /outlets/alias` (`alias:write`).
@@ -146,11 +160,28 @@ complete.
 - WhatsApp free-form replies are only allowed inside the **24h service window**
   (the contact messaged us first). Outside it, a UTILITY **template** is used.
   `OutboundService.sendMessage()` auto-selects.
+- **Shared-WABA setups REQUIRE `WHATSAPP_PHONE_NUMBER_ID` set** — the webhook
+  receives every number's traffic on the WABA; without the filter Komuta would
+  ingest other businesses' messages. See `docs/04_META_WHATSAPP_SETUP.md` §0
+  (fast path for the shared BakirKupa WABA).
+- Refresh tokens are stored (argon2-hashed, keyed by `jti`), **rotated on
+  every `/auth/refresh`**, and reuse of a rotated token revokes the whole
+  family (theft detection). Logout/password change revokes all of a user's
+  refresh tokens.
+- Auth via `Authorization: Bearer` everywhere, with ONE exception: the SSE
+  route `GET /notifications/stream` is marked `@AllowTokenQuery()` and also
+  accepts the access JWT as `?token=` (browser EventSource cannot set
+  headers). Never add `@AllowTokenQuery()` to other routes.
+- Throttling: global default plus per-route overrides — login 10/min,
+  refresh 30/min, webhook 600/min, keyed by real client IP (`trust proxy` is
+  set to 1; the API sits behind Nginx).
 - Ingestion currently runs **in-process in the background** after a fast 200
   (idempotent). It can be moved onto the BullMQ queue without changing the pure
   pipeline. See `docs/DECISIONS.md`.
 - `businessDate` is computed in the outlet's timezone (default Europe/Istanbul).
 - At most one CONFIRMED `RevenueEntry` per (outlet, day); corrections supersede.
+- Production domain is **panora.live** (nginx, certbot, docs, healthcheck all
+  reference it).
 
 ## Docs
 `/docs` contains setup, local dev, Contabo deployment, domain/SSL, Meta WhatsApp
