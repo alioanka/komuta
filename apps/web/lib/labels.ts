@@ -39,6 +39,8 @@ export function resolutionStatusLabel(status: ResolutionStatus, t: Catalog): str
       return 'Çözümlenemedi'; // unparseable
     case 'DUPLICATE':
       return 'Tekrar'; // duplicate
+    case 'BLOCKED':
+      return 'Engellendi'; // sender blocked
     default:
       return status;
   }
@@ -56,6 +58,7 @@ export function resolutionStatusTone(
     case 'AMBIGUOUS':
       return 'warning';
     case 'UNPARSEABLE':
+    case 'BLOCKED':
       return 'danger';
     default:
       return 'neutral';
