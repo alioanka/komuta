@@ -42,6 +42,21 @@ export default function OverviewPage() {
       ? Math.round((data.outletsReported / data.outletsExpected) * 100)
       : 0;
 
+  // Delta vs yesterday, derived from the trend series.
+  const todayIdx = data ? trendData.findIndex((p) => p.date === data.date) : -1;
+  const yesterdayValue =
+    todayIdx > 0
+      ? trendData[todayIdx - 1].value
+      : trendData.length > 1
+        ? trendData[trendData.length - 2].value
+        : null;
+  const todayValue = Number(data?.totalRevenueToday ?? 0);
+  const revenueDelta =
+    yesterdayValue != null && yesterdayValue > 0
+      ? ((todayValue - yesterdayValue) / yesterdayValue) * 100
+      : null;
+  const sparkValues = trendData.map((p) => p.value);
+
   const companyColumns: Column<PerCompany>[] = [
     {
       key: 'name',
@@ -75,7 +90,7 @@ export default function OverviewPage() {
   ];
 
   return (
-    <AppShell title={t.nav.overview}>
+    <AppShell title={t.nav.overview} subtitle="Günlük ciro ve raporlama durumu">
       {overview.isError ? (
         <ErrorState message={(overview.error as Error).message} onRetry={() => overview.refetch()} />
       ) : (
@@ -86,6 +101,9 @@ export default function OverviewPage() {
               label={`${t.metrics.revenue} (bugün)`}
               value={data ? formatMoney(data.totalRevenueToday) : '—'}
               sub={data ? formatDate(data.date, { day: '2-digit', month: 'long', year: 'numeric' }) : undefined}
+              delta={revenueDelta}
+              deltaLabel="düne göre"
+              spark={sparkValues}
               tone="brand"
               loading={overview.isLoading}
             />
