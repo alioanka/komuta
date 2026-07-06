@@ -180,3 +180,53 @@ describe('decideResolution — blocked senders', () => {
     expect(d.status).toBe('MAPPED');
   });
 });
+
+describe('resolveStoreFromTokens — token-subset alias matching', () => {
+  const outlets: OutletCandidate[] = [
+    {
+      outletId: 'o-camlica',
+      code: '1234',
+      normalizedNames: [normalizeTr('Çamlıca BK'), normalizeTr('camlica')],
+    },
+    { outletId: 'o-pizza', code: '5000', normalizedNames: [normalizeTr('Pizza Sando')] },
+  ];
+
+  it('a single token matching an alias resolves despite extra words', () => {
+    const r = resolveStoreFromTokens(['Çamlıca', 'BK', 'günaydın'], outlets);
+    expect(r?.outletId).toBe('o-camlica');
+    expect(r?.method).toBe('alias');
+    expect(r?.matchedOn).toBe('camlica');
+  });
+
+  it('a contiguous token pair matching an alias resolves', () => {
+    const r = resolveStoreFromTokens(['bugünkü', 'Pizza', 'Sando', 'ciro'], outlets);
+    expect(r?.outletId).toBe('o-pizza');
+    expect(r?.method).toBe('alias');
+    expect(r?.matchedOn).toBe(normalizeTr('Pizza Sando'));
+  });
+
+  it('conflicting subset matches for different outlets do not guess', () => {
+    const conflicting: OutletCandidate[] = [
+      { outletId: 'o-a', code: '1', normalizedNames: ['alpha'] },
+      { outletId: 'o-b', code: '2', normalizedNames: ['beta'] },
+    ];
+    const r = resolveStoreFromTokens(['alpha', 'beta'], conflicting);
+    expect(r).toBeNull();
+  });
+
+  it('non-contiguous pairs do not match', () => {
+    const gap: OutletCandidate[] = [
+      { outletId: 'o-g', code: '9', normalizedNames: ['kadikoy merkez'] },
+    ];
+    // "kadikoy" and "merkez" are separated by another token → no pair match,
+    // and the fuzzy score over the whole prefix is below the threshold.
+    const r = resolveStoreFromTokens(['kadikoy', 'x1x1x1', 'merkez'], gap);
+    expect(r).toBeNull();
+  });
+
+  it('whole-prefix exact alias still wins first (unchanged behavior)', () => {
+    const r = resolveStoreFromTokens(['Çamlıca', 'BK'], outlets);
+    expect(r?.method).toBe('alias');
+    expect(r?.matchedOn).toBe(normalizeTr('Çamlıca BK'));
+  });
+});

@@ -105,6 +105,30 @@ export function resolveStoreFromTokens(
     }
   }
 
+  // 2b. Token-subset exact alias match: a single token or contiguous token pair
+  // that exactly equals an alias resolves even when surrounded by extra words
+  // ("Çamlıca BK günaydın" → alias "camlica"). Only applied when every such
+  // match points at the SAME outlet — a conflict falls through (never guess).
+  if (normalizedTokens.length > 1) {
+    const subsequences: string[] = [...normalizedTokens];
+    for (let i = 0; i + 1 < normalizedTokens.length; i++) {
+      subsequences.push(`${normalizedTokens[i]} ${normalizedTokens[i + 1]}`);
+    }
+    let subsetMatch: StoreResolution | null = null;
+    let conflict = false;
+    for (const sub of subsequences) {
+      for (const outlet of outlets) {
+        if (!outlet.normalizedNames.includes(sub)) continue;
+        if (subsetMatch && subsetMatch.outletId !== outlet.outletId) {
+          conflict = true;
+        } else if (!subsetMatch) {
+          subsetMatch = { outletId: outlet.outletId, method: 'alias', score: 1, matchedOn: sub };
+        }
+      }
+    }
+    if (subsetMatch && !conflict) return subsetMatch;
+  }
+
   // 3. Fuzzy name match (best similarity across all names).
   let best: StoreResolution | null = null;
   for (const outlet of outlets) {
