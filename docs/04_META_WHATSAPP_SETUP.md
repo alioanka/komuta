@@ -3,6 +3,126 @@
 This is the most involved external setup. Work through it carefully and in order. By the
 end, Komuta will receive employee WhatsApp messages and be able to send confirmations.
 
+> **⚡ READ THIS FIRST — our actual scenario (July 2026).** The generic guide below
+> (sections 1–10) describes a from-scratch setup. Our real situation is different and
+> **much shorter**: the Bakır Kupa business portfolio is already **verified**, a
+> **Komuta app already exists** (App ID `1032854465800165`), and the new number
+> **+90 533 945 08 84** (Phone number ID `1212503398607413`) already sits in the
+> shared **BakirKupa WABA** (`4358223117837235`) next to the BrewIQ number. Follow
+> **Section 0** below — it activates Komuta **without touching anything BrewIQ uses**
+> and **skips business verification, App Review and app publishing entirely**.
+> Domain: **panora.live** → webhook `https://panora.live/webhooks/whatsapp`.
+
+---
+
+## 0. Fast path for the existing shared-WABA setup (RECOMMENDED)
+
+**Why this works:** the webhook callback URL lives on the *App*, not on the WABA or the
+phone number. A WABA can be subscribed to by **multiple apps at once, and Meta delivers
+every event to each subscribed app's own callback URL**. So the EspressoLab app keeps
+receiving events at `brewiq.tech` exactly as today, while the Komuta app *additionally*
+receives them at `panora.live`. Each backend filters by `phone_number_id` — Komuta
+ignores the BrewIQ number's events (built-in: set `WHATSAPP_PHONE_NUMBER_ID` in `.env`)
+and BrewIQ already tolerates the Komuta number's events (it has since the number was
+added). **Nothing in the BrewIQ configuration is modified at any step.**
+
+### 0.1 Prerequisites
+- Komuta deployed and reachable at `https://panora.live` with a valid TLS certificate
+  (docs 02 + 03). The webhook verification handshake needs the live endpoint.
+- `.env` on the server already contains a strong random `META_VERIFY_TOKEN`
+  (`openssl rand -hex 24`).
+
+### 0.2 Collect the Komuta app credentials
+1. Open <https://developers.facebook.com/apps/> → select the **Komuta** app.
+2. Left sidebar → **App settings → Basic**:
+   - **App ID** → `META_APP_ID` (`1032854465800165`)
+   - **App secret** → click **Show** → `META_APP_SECRET`
+
+### 0.3 Configure the Komuta app webhook
+1. In the Komuta app dashboard, open the WhatsApp webhook settings. Depending on which
+   dashboard UI Meta shows you, it is either:
+   - Left sidebar → **WhatsApp → Configuration**, or
+   - **Dashboard → Use cases → "Connect with customers through WhatsApp" → Customize →
+     Webhooks** (the new use-case UI).
+2. Under **Webhook**: Callback URL = `https://panora.live/webhooks/whatsapp`,
+   Verify token = the value of `META_VERIFY_TOKEN` → **Verify and save**.
+   (Komuta answers the `hub.challenge` handshake automatically once deployed.)
+3. In the **Webhook fields** table, **Subscribe** to the `messages` field.
+   Do NOT touch the EspressoLab app's webhook page.
+
+### 0.4 Create a system-user token for Komuta
+1. <https://business.facebook.com/settings> → make sure **Bakır Kupa** portfolio is
+   selected → **Users → System users** → **Add** → name `Komuta Bot`, role **Admin**.
+2. On `Komuta Bot` → **Add assets**:
+   - **Apps → Komuta** → toggle **Manage app** (full control).
+   - **WhatsApp accounts → BakirKupa** → toggle **Manage WhatsApp business account**.
+3. **Generate new token** → App: **Komuta** → Expiration: **Never** → check
+   `whatsapp_business_messaging` + `whatsapp_business_management`
+   (+ `whatsapp_business_manage_events` optional) → **Generate token** → copy it
+   **once** → `WHATSAPP_ACCESS_TOKEN`.
+
+### 0.5 Subscribe the Komuta app to the shared WABA (one command)
+```bash
+curl -X POST "https://graph.facebook.com/v23.0/4358223117837235/subscribed_apps" \
+  -H "Authorization: Bearer $WHATSAPP_ACCESS_TOKEN"
+# verify — must list BOTH apps (EspressoLab Notifications AND Komuta):
+curl "https://graph.facebook.com/v23.0/4358223117837235/subscribed_apps" \
+  -H "Authorization: Bearer $WHATSAPP_ACCESS_TOKEN"
+```
+This *adds* a subscription; the EspressoLab subscription is untouched.
+
+### 0.6 Register the number for Cloud API sending
+1. **WhatsApp Manager** (<https://business.facebook.com/wa/manage/phone-numbers/>) →
+   account **BakirKupa** → row **+90 533 945 08 84** → gear icon → **Two-step
+   verification** → set a 6-digit PIN.
+2. Register:
+```bash
+curl -X POST "https://graph.facebook.com/v23.0/1212503398607413/register" \
+  -H "Authorization: Bearer $WHATSAPP_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"messaging_product":"whatsapp","pin":"<your-6-digit-pin>"}'
+```
+
+### 0.7 (Optional but recommended) display name → "Komuta"
+WhatsApp Manager → Phone numbers → the new number → gear → **Profile** → change the
+display name from `BakirKupa` to `Komuta` → automatic review (minutes to ~48h). Display
+name state does **not** block messaging (the BrewIQ number runs with a *rejected* name).
+Avoid personal names — that's why `Ali` was rejected.
+
+### 0.8 Fill `.env` and restart
+```
+META_APP_ID=1032854465800165
+META_APP_SECRET=<from 0.2>
+META_VERIFY_TOKEN=<yours>
+WHATSAPP_PHONE_NUMBER_ID=1212503398607413
+WHATSAPP_BUSINESS_ACCOUNT_ID=4358223117837235
+WHATSAPP_ACCESS_TOKEN=<from 0.4>
+```
+`WHATSAPP_PHONE_NUMBER_ID` **must** be set in this shared-WABA setup — it is what makes
+Komuta ignore the BrewIQ number's webhook events.
+
+### 0.9 Test
+Send a WhatsApp text to **+90 533 945 08 84** → it must appear in Komuta → *Mesajlar*.
+Reply from the dashboard within 24h (free-form). Then create Komuta's UTILITY templates
+under the BakirKupa WABA (doc 05) — they coexist with the `brewiq_*` templates.
+
+### What you get to skip in this scenario
+| Generic step | Status |
+|---|---|
+| Business verification (section 7) | ✅ already done for Bakır Kupa |
+| App Review / Advanced Access | ✅ not needed — own-business WABA |
+| Publishing / Live mode (section 8) | ✅ not needed — BrewIQ runs unpublished too |
+| Payment method (section 3) | ✅ already on the WABA (paid templates bill there) |
+| New number purchase / OTP | ✅ number already added & verified in the WABA |
+
+### Alternative: full isolation (only if you later want a separate WABA)
+Move the number into its own WABA under the **verified Bakır Kupa** portfolio (NOT the
+empty unverified "Komuta" portfolio — that would trigger business verification again):
+delete **only +90 533 945 08 84** from the BakirKupa WABA (trash icon — never touch
++90 532 335 15 69), then Komuta app → WhatsApp → API Setup → **Add phone number** (new
+OTP via SIM, new Phone number ID, add the Visa to the new WABA in Billing & payments).
+More clicks, more risk, no functional gain today — the fast path above is preferred.
+
 > **Key facts (2025/2026), do not deviate:**
 > - The old **On-Premises API was deprecated in October 2025**. We use the
 >   **Cloud API** only — it's hosted by Meta, no media server to run.

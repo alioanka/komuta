@@ -31,10 +31,10 @@ Legend:
 
 ## B. Domain & DNS
 
-- [ ] **Buy a domain** (suggested: `komuta.app` or `komutapanel.com`).
-- [ ] **Create DNS records:** `A` for `@` and `www` (and `panel`) → VPS IPv4;
+- [x] **Buy a domain** — ✅ purchased: **`panora.live`**.
+- [ ] **Create DNS records:** `A` for `@` and `www` → VPS IPv4;
       `AAAA` only if the VPS has IPv6.
-- [ ] Verify propagation with `dig +short komuta.app A`.
+- [ ] Verify propagation with `dig +short panora.live A`.
   📄 [`03_DOMAIN_AND_SSL.md`](./03_DOMAIN_AND_SSL.md)
 
 ---
@@ -61,25 +61,37 @@ Legend:
 
 ## E. Meta / WhatsApp Cloud API
 
-- [ ] Create a **Meta Business Portfolio** + **Developer account**.
-- [ ] Create a **Business-type app**, add the **WhatsApp** product.
-- [ ] **TODO(secret):** copy **App ID** → `META_APP_ID` and **App secret** → `META_APP_SECRET`.
-- [ ] Add the **brand-new phone number** (no migration), **add a payment method**, set
-      **display name**.
-- [ ] **TODO(secret):** copy **Phone number ID** → `WHATSAPP_PHONE_NUMBER_ID` and
-      **WABA ID** → `WHATSAPP_BUSINESS_ACCOUNT_ID`.
-- [ ] Enable **two-step verification PIN** and **register** the number via
-      `POST /{PHONE_NUMBER_ID}/register`. **TODO(secret):** the 6-digit PIN.
-- [ ] Create a **System User**, assign the WABA with **Full control**, generate a
-      **PERMANENT token** (scopes: `whatsapp_business_management`,
-      `whatsapp_business_messaging`, `whatsapp_business_manage_events`).
-      **TODO(secret):** → `WHATSAPP_ACCESS_TOKEN`.
-- [ ] **TODO(secret):** choose a **verify token** → `META_VERIFY_TOKEN`.
-- [ ] Configure **webhook**: callback `https://<domain>/webhooks/whatsapp`, the verify
-      token, **subscribe to `messages`** (+ message status).
-- [ ] Complete **Meta Business Verification** (documents; allow several days).
-- [ ] Switch the app to **Live mode**; test inbound + outbound.
-  📄 [`04_META_WHATSAPP_SETUP.md`](./04_META_WHATSAPP_SETUP.md)
+> **Our scenario is pre-provisioned** — follow **Section 0** of
+> [`04_META_WHATSAPP_SETUP.md`](./04_META_WHATSAPP_SETUP.md) (shared BakirKupa WABA,
+> existing Komuta app). Business verification, App Review, publishing and payment
+> method are **already covered** and must be skipped, not repeated.
+
+- [x] Business portfolio + developer account — ✅ exists (**Bakır Kupa**, verified).
+- [x] App with WhatsApp product — ✅ exists: **Komuta**, App ID `1032854465800165`.
+- [x] Phone number — ✅ **+90 533 945 08 84** already in WABA `4358223117837235`,
+      Phone number ID `1212503398607413`, payment method (Visa) already on the WABA.
+- [ ] **TODO(secret):** Komuta app **App secret** → `META_APP_SECRET`
+      (App settings → Basic → Show). `META_APP_ID=1032854465800165`.
+- [ ] **TODO(secret):** invent a strong **verify token** → `META_VERIFY_TOKEN`
+      (`openssl rand -hex 24`).
+- [ ] Configure the **Komuta app webhook**: callback
+      `https://panora.live/webhooks/whatsapp` + verify token → **Verify and save** →
+      subscribe to **`messages`**. (Doc 04 §0.3 — do NOT touch the EspressoLab app.)
+- [ ] Create system user **Komuta Bot**, assign **Komuta app** + **BakirKupa WABA**
+      (full control), generate **permanent token** (scopes:
+      `whatsapp_business_messaging`, `whatsapp_business_management`).
+      **TODO(secret):** → `WHATSAPP_ACCESS_TOKEN`. (Doc 04 §0.4)
+- [ ] **Subscribe the Komuta app to the WABA**:
+      `POST /v23.0/4358223117837235/subscribed_apps` with the Komuta token, then GET to
+      confirm **both** apps are listed. (Doc 04 §0.5)
+- [ ] Set **two-step PIN** + `POST /{PHONE_NUMBER_ID}/register`. **TODO(secret):** PIN.
+      (Doc 04 §0.6)
+- [ ] *(Optional)* change display name `BakirKupa` → `Komuta`. (Doc 04 §0.7)
+- [ ] Test inbound (message to +90 533 945 08 84 appears in *Mesajlar*) and outbound.
+- [x] ~~Business verification~~ — ✅ already verified (Bakır Kupa).
+- [x] ~~App Review / Live mode~~ — ✅ not required for own-business WABA (BrewIQ runs
+      unpublished in dev mode the same way).
+  📄 [`04_META_WHATSAPP_SETUP.md`](./04_META_WHATSAPP_SETUP.md) **Section 0**
 
 ---
 
