@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { DEFAULT_TIMEZONE } from '@komuta/config';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { AuthUser } from '../common/current-user.decorator.js';
@@ -37,7 +38,7 @@ export class DashboardService {
     const pendingMappings = await this.prisma.phoneMapping.count({ where: { status: 'PENDING' } });
 
     const trend = await this.revenueTrend(outletIds, 14);
-    const perCompany = await this.perCompany(user);
+    const perCompany = await this.perCompany(user, outlets, today);
 
     return {
       date: businessDateInTz(new Date(), DEFAULT_TIMEZONE),
@@ -72,31 +73,56 @@ export class DashboardService {
     return out;
   }
 
-  private async perCompany(user: AuthUser) {
+  /**
+   * Per-company KPI breakdown using two grouped queries instead of a per-company
+   * loop: the (already scope-filtered) outlets are grouped in memory and today's
+   * confirmed revenue is aggregated in a single groupBy on RevenueEntry.
+   */
+  private async perCompany(
+    user: AuthUser,
+    outlets: { id: string; companyId: string }[],
+    today: Date,
+  ) {
     const companies = await this.prisma.company.findMany({
       where: { isActive: true },
       select: { id: true, name: true },
+      orderBy: { name: 'asc' },
     });
-    const today = this.today();
+
+    const grouped = outlets.length
+      ? await this.prisma.revenueEntry.groupBy({
+          by: ['outletId'],
+          where: { outletId: { in: outlets.map((o) => o.id) }, businessDate: today, status: 'CONFIRMED' },
+          _sum: { amount: true },
+          _count: { _all: true },
+        })
+      : [];
+    const byOutlet = new Map(grouped.map((g) => [g.outletId, g]));
+    const outletsByCompany = new Map<string, string[]>();
+    for (const o of outlets) {
+      const list = outletsByCompany.get(o.companyId) ?? [];
+      list.push(o.id);
+      outletsByCompany.set(o.companyId, list);
+    }
+
     const results = [];
     for (const c of companies) {
-      const outletWhere = outletScopeWhere(user);
-      const outlets = await this.prisma.outlet.findMany({
-        where: { companyId: c.id, isActive: true, ...outletWhere },
-        select: { id: true },
-      });
-      if (outlets.length === 0 && !user.unscoped) continue;
-      const ids = outlets.map((o) => o.id);
-      const confirmed = await this.prisma.revenueEntry.findMany({
-        where: { outletId: { in: ids }, businessDate: today, status: 'CONFIRMED' },
-        select: { amount: true },
-      });
+      const ids = outletsByCompany.get(c.id) ?? [];
+      if (ids.length === 0 && !user.unscoped) continue;
+      let total = new Prisma.Decimal(0);
+      let reported = 0;
+      for (const id of ids) {
+        const g = byOutlet.get(id);
+        if (!g) continue;
+        total = total.plus(g._sum.amount ?? 0);
+        reported += g._count._all;
+      }
       results.push({
         companyId: c.id,
         name: c.name,
-        outletCount: outlets.length,
-        totalToday: confirmed.reduce((a, r) => a + Number(r.amount), 0).toFixed(2),
-        reported: confirmed.length,
+        outletCount: ids.length,
+        totalToday: total.toFixed(2),
+        reported,
       });
     }
     return results;
