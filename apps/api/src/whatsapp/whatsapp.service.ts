@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { loadEnv } from '../config/env.js';
 import type { InboundMessage } from './ingestion.service.js';
 
 @Injectable()
 export class WhatsAppService {
+  private readonly logger = new Logger(WhatsAppService.name);
+
   /** Verify Meta's X-Hub-Signature-256 HMAC over the raw request body. */
   verifySignature(rawBody: Buffer | string, signatureHeader: string | undefined): boolean {
     const env = loadEnv();
@@ -30,13 +32,30 @@ export class WhatsAppService {
     return null;
   }
 
-  /** Flatten a Meta webhook payload into a list of inbound text messages. */
+  /**
+   * Flatten a Meta webhook payload into a list of inbound text messages.
+   * When WHATSAPP_PHONE_NUMBER_ID is configured, messages addressed to any
+   * other number hosted on the same WABA are skipped — a shared WABA delivers
+   * every number's traffic to the same webhook.
+   */
   parseInbound(payload: unknown): InboundMessage[] {
+    const env = loadEnv();
+    const ownPhoneNumberId = env.WHATSAPP_PHONE_NUMBER_ID;
     const out: InboundMessage[] = [];
     const body = payload as MetaWebhookBody;
     for (const entry of body?.entry ?? []) {
       for (const change of entry.changes ?? []) {
         const value = change.value;
+        const phoneNumberId = value?.metadata?.phone_number_id;
+        if (ownPhoneNumberId && phoneNumberId !== ownPhoneNumberId) {
+          const count = value?.messages?.length ?? 0;
+          if (count > 0) {
+            this.logger.debug(
+              `Skipping ${count} message(s) for foreign phone_number_id ${phoneNumberId ?? 'unknown'}`,
+            );
+          }
+          continue;
+        }
         const toPhone = value?.metadata?.display_phone_number ?? '';
         for (const m of value?.messages ?? []) {
           if (m.type !== 'text' || !m.text) continue;
