@@ -7,6 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { IS_PUBLIC_KEY } from './public.decorator.js';
+import { ALLOW_TOKEN_QUERY_KEY } from './allow-token-query.decorator.js';
 import type { AuthUser } from './current-user.decorator.js';
 import { loadEnv } from '../config/env.js';
 
@@ -27,10 +28,24 @@ export class JwtAuthGuard implements CanActivate {
 
     const req = context.switchToHttp().getRequest();
     const header: string | undefined = req.headers?.authorization;
-    if (!header?.startsWith('Bearer ')) {
+    let token: string | undefined;
+    if (header?.startsWith('Bearer ')) {
+      token = header.slice('Bearer '.length);
+    } else {
+      // Browser EventSource cannot set headers — routes explicitly marked with
+      // @AllowTokenQuery() (SSE only) may pass the access token as ?token=.
+      const allowQueryToken = this.reflector.getAllAndOverride<boolean>(ALLOW_TOKEN_QUERY_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]);
+      const queryToken = req.query?.token;
+      if (allowQueryToken && typeof queryToken === 'string' && queryToken.length > 0) {
+        token = queryToken;
+      }
+    }
+    if (!token) {
       throw new UnauthorizedException('Missing bearer token');
     }
-    const token = header.slice('Bearer '.length);
     try {
       const payload = await this.jwt.verifyAsync<AuthUser & { sub: string }>(token, {
         secret: loadEnv().JWT_ACCESS_SECRET,

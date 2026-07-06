@@ -4,6 +4,7 @@ import { notificationRuleSchema, type NotificationChannel } from '@komuta/shared
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NotificationsService } from './notifications.service.js';
 import { RequirePermissions } from '../common/require-permissions.decorator.js';
+import { AllowTokenQuery } from '../common/allow-token-query.decorator.js';
 import { CurrentUser, type AuthUser } from '../common/current-user.decorator.js';
 import { ZodPipe } from '../common/zod-validation.pipe.js';
 
@@ -32,8 +33,13 @@ export class NotificationsController {
     return this.notifications.markRead(user.id, id);
   }
 
-  /** Server-Sent Events stream of in-app notifications for the current user. */
+  /**
+   * Server-Sent Events stream of in-app notifications for the current user.
+   * Browser EventSource cannot set headers, so this route (and only this
+   * route) also accepts the access JWT via `?token=` — same verification.
+   */
   @RequirePermissions('notification:read')
+  @AllowTokenQuery()
   @Sse('stream')
   stream(@CurrentUser() user: AuthUser): Observable<MessageEvent> {
     return this.notifications.stream(user.id).pipe(map((data) => ({ data }) as MessageEvent));
