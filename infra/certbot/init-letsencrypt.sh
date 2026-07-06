@@ -20,7 +20,7 @@
 set -euo pipefail
 
 # ----- EDIT THESE (or export before running) --------------------------------
-DOMAIN="${DOMAIN:-komuta.example.com}"   # <-- REPLACE with your domain
+DOMAIN="${DOMAIN:-panora.live}"   # <-- REPLACE with your domain
 EMAIL="${EMAIL:-admin@example.com}"      # <-- REPLACE with your email (renewal notices)
 # Set STAGING=1 to hit Let's Encrypt staging while testing (avoids rate limits).
 STAGING="${STAGING:-0}"
@@ -34,7 +34,7 @@ CONF_VOLUME="komuta_certbot-conf"       # named volume mounted at /etc/letsencry
 
 cd "$(dirname "$0")/../.." # repo root
 
-if [ "$DOMAIN" = "komuta.example.com" ] || [ "$EMAIL" = "admin@example.com" ]; then
+if [ "$DOMAIN" = "panora.live" ] || [ "$EMAIL" = "admin@example.com" ]; then
   echo "ERROR: edit DOMAIN and EMAIL at the top of this script first." >&2
   exit 1
 fi

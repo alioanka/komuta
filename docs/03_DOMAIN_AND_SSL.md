@@ -7,7 +7,7 @@ Meta's WhatsApp Cloud API will only deliver webhooks to an HTTPS URL.
 Prerequisite: the stack from [`02_DEPLOYMENT_CONTABO.md`](./02_DEPLOYMENT_CONTABO.md) is
 running, and ports 80/443 are open in `ufw`.
 
-> Placeholders: `komuta.app` = your domain; `203.0.113.10` = your VPS IPv4;
+> Placeholders: `panora.live` = your domain; `203.0.113.10` = your VPS IPv4;
 > `2001:db8::1` = your VPS IPv6 (optional).
 
 ---
@@ -17,8 +17,8 @@ running, and ports 80/443 are open in `ufw`.
 Use any registrar (Namecheap, Cloudflare Registrar, Porkbun, GoDaddy, Gandi, etc.).
 Suggested names for this project:
 
-- `komuta.app`
-- `komutapanel.com`
+- `panora.live`
+- `panora.live`
 
 > `.app` domains are on the HSTS preload list and **require HTTPS** — which is fine,
 > because we use HTTPS anyway.
@@ -55,8 +55,8 @@ DNS changes take time to spread (TTL-dependent; usually minutes, sometimes up to
 hours). Verify with:
 
 ```bash
-dig +short komuta.app A
-dig +short www.komuta.app A
+dig +short panora.live A
+dig +short www.panora.live A
 # Both should return 203.0.113.10
 ```
 
@@ -95,7 +95,7 @@ email (used for expiry notices):
 ```bash
 docker compose run --rm certbot certonly \
   --webroot -w /var/www/certbot \
-  -d komuta.app -d www.komuta.app \
+  -d panora.live -d www.panora.live \
   --email aoankarali@gmail.com \
   --agree-tos --no-eff-email
 ```
@@ -103,7 +103,7 @@ docker compose run --rm certbot certonly \
 > If your compose file names the certbot service differently, use that name. The flags
 > are the important part: `certonly --webroot -w /var/www/certbot -d <domains>`.
 
-On success, certs land in `/etc/letsencrypt/live/komuta.app/` (inside the shared
+On success, certs land in `/etc/letsencrypt/live/panora.live/` (inside the shared
 volume): `fullchain.pem` and `privkey.pem`.
 
 ---
@@ -117,7 +117,7 @@ the app:
 # --- HTTP: serve ACME challenge, redirect everything else to HTTPS ---
 server {
     listen 80;
-    server_name komuta.app www.komuta.app;
+    server_name panora.live www.panora.live;
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -132,10 +132,10 @@ server {
 server {
     listen 443 ssl;
     http2 on;
-    server_name komuta.app www.komuta.app;
+    server_name panora.live www.panora.live;
 
-    ssl_certificate     /etc/letsencrypt/live/komuta.app/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/komuta.app/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/panora.live/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/panora.live/privkey.pem;
     ssl_protocols       TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers on;
 
@@ -225,18 +225,18 @@ A successful dry run means auto-renewal will work.
 ## 6. Verify HTTPS
 
 ```bash
-curl -I https://komuta.app
+curl -I https://panora.live
 # Look for: HTTP/2 200, and a "strict-transport-security" header.
 
-curl -I http://komuta.app
-# Look for: HTTP/1.1 301 Moved Permanently → location: https://komuta.app/
+curl -I http://panora.live
+# Look for: HTTP/1.1 301 Moved Permanently → location: https://panora.live/
 
-curl -I https://komuta.app/api/health
+curl -I https://panora.live/api/health
 # Look for: HTTP/2 200
 ```
 
 You can also check the certificate grade at <https://www.ssllabs.com/ssltest/>.
 
 > Once HTTPS is verified, the WhatsApp webhook callback URL is
-> `https://komuta.app/webhooks/whatsapp` — use it in
+> `https://panora.live/webhooks/whatsapp` — use it in
 > [`04_META_WHATSAPP_SETUP.md`](./04_META_WHATSAPP_SETUP.md).

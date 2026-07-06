@@ -10,7 +10,7 @@ Do these in order. Steps 1–3 (hardening) only need to be done once per server.
 > **Conventions in this doc:**
 > - `203.0.113.10` is a placeholder for **your VPS IPv4** — replace it everywhere.
 > - `deploy` is the non-root user we create — use your own name if you prefer.
-> - `komuta.app` is a placeholder domain.
+> - `panora.live` is a placeholder domain.
 
 ---
 
@@ -177,10 +177,10 @@ list — the most important production changes:
 | Variable                        | Production value                                              |
 |---------------------------------|--------------------------------------------------------------|
 | `NODE_ENV`                      | `production`                                                  |
-| `APP_URL`                       | `https://komuta.app`                                         |
-| `API_URL`                       | `https://komuta.app` (api is reached via `/api`)            |
-| `CORS_ORIGIN`                   | `https://komuta.app`                                        |
-| `COOKIE_DOMAIN`                 | `.komuta.app`                                                |
+| `APP_URL`                       | `https://panora.live`                                         |
+| `API_URL`                       | `https://panora.live` (api is reached via `/api`)            |
+| `CORS_ORIGIN`                   | `https://panora.live`                                        |
+| `COOKIE_DOMAIN`                 | `.panora.live`                                                |
 | `DATABASE_URL`                  | point host at the compose service, e.g. `...@postgres:5432/...` |
 | `REDIS_URL`                     | `redis://redis:6379`                                         |
 | `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | `openssl rand -base64 48` each                    |
@@ -252,7 +252,7 @@ A minimal HTTP server block (HTTPS is added in doc 03) looks like:
 ```nginx
 server {
     listen 80;
-    server_name komuta.app www.komuta.app;
+    server_name panora.live www.panora.live;
 
     # Let's Encrypt HTTP-01 challenge (see doc 03)
     location /.well-known/acme-challenge/ {
@@ -307,7 +307,7 @@ this server and switch to HTTPS.
 ```bash
 # API health (through Nginx once DNS/HTTPS are set)
 curl -I http://203.0.113.10/api/health     # before DNS
-curl -I https://komuta.app/api/health      # after doc 03
+curl -I https://panora.live/api/health      # after doc 03
 
 # Containers
 docker compose ps

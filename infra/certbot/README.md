@@ -19,7 +19,7 @@ temporary self-signed cert, starting nginx, then requesting the real cert.
 ```bash
 # 1. Point the domain's DNS A/AAAA record at this server.
 # 2. Edit DOMAIN and EMAIL at the top of the script (or export them):
-export DOMAIN=komuta.example.com
+export DOMAIN=panora.live
 export EMAIL=you@example.com
 
 # 3. (optional) test against staging first to avoid rate limits:

@@ -6,8 +6,8 @@
 # unreachable, so it can drive cron alerts / uptime monitors.
 #
 # Override the targets via env vars (defaults assume the public site):
-#   API_HEALTH_URL  (default https://komuta.example.com/api/health)
-#   WEB_URL         (default https://komuta.example.com/)
+#   API_HEALTH_URL  (default https://panora.live/api/health)
+#   WEB_URL         (default https://panora.live/)
 #
 # Usage:
 #   ./infra/scripts/healthcheck.sh
@@ -15,9 +15,9 @@
 # ----------------------------------------------------------------------------
 set -euo pipefail
 
-# <-- REPLACE komuta.example.com with your domain, or pass URLs via env.
-API_HEALTH_URL="${API_HEALTH_URL:-https://komuta.example.com/api/health}"
-WEB_URL="${WEB_URL:-https://komuta.example.com/}"
+# <-- REPLACE panora.live with your domain, or pass URLs via env.
+API_HEALTH_URL="${API_HEALTH_URL:-https://panora.live/api/health}"
+WEB_URL="${WEB_URL:-https://panora.live/}"
 TIMEOUT="${HEALTHCHECK_TIMEOUT:-10}"
 
 FAILED=0
