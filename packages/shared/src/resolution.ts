@@ -133,6 +133,7 @@ export function resolveStoreFromTokens(
 
 export type ResolutionAction =
   | 'IGNORE_DUPLICATE'
+  | 'IGNORE_BLOCKED'
   | 'LOG_UNPARSEABLE'
   | 'STORE_CONFIRMED'
   | 'ASK_WHICH_OUTLET'
@@ -149,6 +150,8 @@ export interface ResolutionInput {
   mappedOutletIds: string[];
   /** Outlet id resolved from the text prefix (store code/name/employee), or null. */
   storeOutletId: string | null;
+  /** Sender's mapping is BLOCKED → ignore the message entirely (log only). */
+  senderBlocked?: boolean;
 }
 
 export interface ResolutionDecision {
@@ -162,7 +165,7 @@ export interface ResolutionDecision {
 }
 
 export function decideResolution(input: ResolutionInput): ResolutionDecision {
-  const { isDuplicate, amountStatus, mappedOutletIds, storeOutletId } = input;
+  const { isDuplicate, amountStatus, mappedOutletIds, storeOutletId, senderBlocked } = input;
 
   if (isDuplicate) {
     return {
@@ -171,6 +174,18 @@ export function decideResolution(input: ResolutionInput): ResolutionDecision {
       entryStatus: null,
       action: 'IGNORE_DUPLICATE',
       reason: 'duplicate waMessageId',
+    };
+  }
+
+  if (senderBlocked) {
+    // A manager explicitly blocked this sender: never store revenue, never
+    // create pending mappings, never alert — just log the message.
+    return {
+      status: ResolutionStatus.BLOCKED,
+      outletId: null,
+      entryStatus: null,
+      action: 'IGNORE_BLOCKED',
+      reason: 'sender is blocked',
     };
   }
 

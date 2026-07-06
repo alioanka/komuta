@@ -58,6 +58,7 @@ export const ResolutionStatus = {
   AMBIGUOUS: 'AMBIGUOUS',
   UNPARSEABLE: 'UNPARSEABLE',
   DUPLICATE: 'DUPLICATE',
+  BLOCKED: 'BLOCKED',
 } as const;
 export type ResolutionStatus = (typeof ResolutionStatus)[keyof typeof ResolutionStatus];
 

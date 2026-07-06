@@ -64,6 +64,7 @@ enum ResolutionStatus {
   AMBIGUOUS
   UNPARSEABLE
   DUPLICATE
+  BLOCKED
 }
 
 enum TemplateCategory {

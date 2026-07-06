@@ -1,4 +1,5 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { extractMessage, normalizeTr } from '@komuta/money';
 import {
   decideResolution,
@@ -70,23 +71,41 @@ export class IngestionService {
       amountStatus: extracted.amountStatus,
       mappedOutletIds: [...new Set(mappedOutletIds)],
       storeOutletId,
+      senderBlocked: mapping?.status === 'BLOCKED',
     });
 
-    // 6. Persist the raw message log.
-    await this.prisma.whatsAppMessage.create({
-      data: {
-        waMessageId: msg.waMessageId,
-        direction: 'IN',
-        fromPhone: msg.fromPhone,
-        toPhone: msg.toPhone,
-        body: msg.body,
-        type: 'text',
-        parsedAmount: extracted.amount ? extracted.amount.toFixed(2) : null,
-        resolvedOutletId: decision.outletId,
-        resolutionStatus: decision.status,
-        rawPayload: (msg.rawPayload ?? undefined) as object | undefined,
-      },
-    });
+    // 6. Persist the raw message log. The unique constraint on waMessageId is
+    // the idempotency backstop: two concurrent webhook deliveries can both pass
+    // the step-1 check, but only one create succeeds — the loser stops here
+    // before any revenue is written.
+    try {
+      await this.prisma.whatsAppMessage.create({
+        data: {
+          waMessageId: msg.waMessageId,
+          direction: 'IN',
+          fromPhone: msg.fromPhone,
+          toPhone: msg.toPhone,
+          body: msg.body,
+          type: 'text',
+          parsedAmount: extracted.amount ? extracted.amount.toFixed(2) : null,
+          resolvedOutletId: decision.outletId,
+          resolutionStatus: decision.status,
+          rawPayload: (msg.rawPayload ?? undefined) as object | undefined,
+        },
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        this.logger.log(`Inbound ${msg.waMessageId}: concurrent duplicate ignored`);
+        return {
+          status: 'DUPLICATE',
+          outletId: null,
+          entryStatus: null,
+          action: 'IGNORE_DUPLICATE',
+          reason: 'concurrent duplicate waMessageId',
+        };
+      }
+      throw err;
+    }
 
     // 7. Track 24h window.
     if (mapping) {
@@ -123,15 +142,23 @@ export class IngestionService {
     }
 
     // 9. Create a PENDING mapping when an unknown sender resolved to a store.
+    // (When a PENDING mapping already exists — `mapping` is set — we do not
+    // create another row; the entry stays PENDING_REVIEW awaiting approval.)
     if (decision.action === 'CREATE_PENDING_MAPPING' && decision.outletId && !mapping) {
-      await this.prisma.phoneMapping.create({
-        data: {
-          phoneE164: msg.fromPhone,
-          outletId: decision.outletId,
-          status: 'PENDING',
-          lastInboundAt: msg.timestamp,
-        },
-      });
+      await this.prisma.phoneMapping
+        .create({
+          data: {
+            phoneE164: msg.fromPhone,
+            outletId: decision.outletId,
+            status: 'PENDING',
+            lastInboundAt: msg.timestamp,
+          },
+        })
+        .catch((err) => {
+          // Concurrent first-messages from the same new phone: one create wins.
+          if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') return;
+          throw err;
+        });
     }
 
     // 10. Alert managers for cases that need human attention.
@@ -159,6 +186,13 @@ export class IngestionService {
         title: 'Onay gerekiyor',
         body: `${from} için gönderen↔mağaza eşleşmesi onay bekliyor.`,
         payload: { fromPhone: from, outletId: decision.outletId },
+      });
+    } else if (decision.status === 'AMBIGUOUS') {
+      await this.notifications.dispatch({
+        event: 'NEEDS_CONFIRMATION',
+        title: 'Hangi şube?',
+        body: `${from} birden fazla şubeye bağlı — mesajda şube belirtilmedi: "${msg.body}"`,
+        payload: { fromPhone: from },
       });
     } else if (decision.status === 'UNPARSEABLE') {
       await this.notifications.dispatch({

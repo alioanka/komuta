@@ -132,3 +132,51 @@ describe('string distance helpers', () => {
     expect(similarity('abc', 'xyz')).toBe(0);
   });
 });
+
+describe('decideResolution — blocked senders', () => {
+  it('blocked sender -> BLOCKED / ignore entirely, regardless of content', () => {
+    const d = decideResolution({
+      isDuplicate: false,
+      amountStatus: OK,
+      mappedOutletIds: [],
+      storeOutletId: 'o1',
+      senderBlocked: true,
+    });
+    expect(d.status).toBe('BLOCKED');
+    expect(d.action).toBe('IGNORE_BLOCKED');
+    expect(d.outletId).toBeNull();
+    expect(d.entryStatus).toBeNull();
+  });
+
+  it('blocked wins over unparseable (log-only either way, but explicit status)', () => {
+    const d = decideResolution({
+      isDuplicate: false,
+      amountStatus: 'UNPARSEABLE',
+      mappedOutletIds: [],
+      storeOutletId: null,
+      senderBlocked: true,
+    });
+    expect(d.status).toBe('BLOCKED');
+  });
+
+  it('duplicate still wins over blocked', () => {
+    const d = decideResolution({
+      isDuplicate: true,
+      amountStatus: OK,
+      mappedOutletIds: [],
+      storeOutletId: null,
+      senderBlocked: true,
+    });
+    expect(d.status).toBe('DUPLICATE');
+  });
+
+  it('senderBlocked defaults to false — existing behavior unchanged', () => {
+    const d = decideResolution({
+      isDuplicate: false,
+      amountStatus: OK,
+      mappedOutletIds: ['o1'],
+      storeOutletId: null,
+    });
+    expect(d.status).toBe('MAPPED');
+  });
+});

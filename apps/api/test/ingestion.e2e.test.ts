@@ -112,4 +112,76 @@ d('WhatsApp ingestion (e2e)', () => {
     });
     expect(decision.status).toBe('UNPARSEABLE');
   });
+
+  it('repeat message from a still-PENDING sender → no duplicate mapping row', async () => {
+    const phone = `+9055502${String(3000 + counter).padStart(4, '0')}`;
+    const first = await ingestion.handleInbound({
+      waMessageId: wa(),
+      fromPhone: phone,
+      toPhone: '+900000000000',
+      body: '1234 5000',
+      timestamp: new Date(),
+    });
+    expect(first.action).toBe('CREATE_PENDING_MAPPING');
+    const second = await ingestion.handleInbound({
+      waMessageId: wa(),
+      fromPhone: phone,
+      toPhone: '+900000000000',
+      body: '1234 6000',
+      timestamp: new Date(),
+    });
+    // Still needs confirmation, entry held for review, but only ONE mapping row.
+    expect(second.status).toBe('NEEDS_CONFIRMATION');
+    const mappings = await prisma.phoneMapping.count({ where: { phoneE164: phone } });
+    expect(mappings).toBe(1);
+    const entries = await prisma.revenueEntry.count({
+      where: { status: 'PENDING_REVIEW', rawMessageId: { startsWith: 'wamid.TEST.' } },
+    });
+    expect(entries).toBeGreaterThanOrEqual(2);
+  });
+
+  it('BLOCKED sender → message logged, no revenue, no pending mapping', async () => {
+    const phone = `+9055503${String(4000 + counter).padStart(4, '0')}`;
+    await prisma.phoneMapping.upsert({
+      where: { phoneE164: phone },
+      create: { phoneE164: phone, status: 'BLOCKED' },
+      update: { status: 'BLOCKED', outletId: null },
+    });
+    const id = wa();
+    const decision = await ingestion.handleInbound({
+      waMessageId: id,
+      fromPhone: phone,
+      toPhone: '+900000000000',
+      body: '1234 7777', // valid store code + amount — must still be ignored
+      timestamp: new Date(),
+    });
+    expect(decision.status).toBe('BLOCKED');
+    expect(decision.action).toBe('IGNORE_BLOCKED');
+
+    const logged = await prisma.whatsAppMessage.findUnique({ where: { waMessageId: id } });
+    expect(logged?.resolutionStatus).toBe('BLOCKED');
+    const entry = await prisma.revenueEntry.findFirst({ where: { rawMessageId: id } });
+    expect(entry).toBeNull();
+    const mapping = await prisma.phoneMapping.findUnique({ where: { phoneE164: phone } });
+    expect(mapping?.status).toBe('BLOCKED'); // unchanged, no second row possible (unique)
+  });
+
+  it('two concurrent webhooks with the same waMessageId store exactly one entry', async () => {
+    const id = wa();
+    const msg = {
+      waMessageId: id,
+      fromPhone: '+905551112233',
+      toPhone: '+900000000000',
+      body: '4321,00',
+      timestamp: new Date(),
+    };
+    const [a, b] = await Promise.all([ingestion.handleInbound(msg), ingestion.handleInbound(msg)]);
+    const statuses = [a.status, b.status].sort();
+    // One side wins, the other must be treated as a duplicate (never an error).
+    expect(statuses).toContain('MAPPED');
+    const messages = await prisma.whatsAppMessage.count({ where: { waMessageId: id } });
+    expect(messages).toBe(1);
+    const entries = await prisma.revenueEntry.count({ where: { rawMessageId: id } });
+    expect(entries).toBe(1);
+  });
 });
