@@ -7,7 +7,15 @@ import { Sidebar } from '@/components/Sidebar';
 import { TopBar } from '@/components/TopBar';
 import { Spinner } from '@/components/ui';
 
-export function AppShell({ children, title }: { children: React.ReactNode; title?: string }) {
+export function AppShell({
+  children,
+  title,
+  subtitle,
+}: {
+  children: React.ReactNode;
+  title?: string;
+  subtitle?: string;
+}) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -30,7 +38,7 @@ export function AppShell({ children, title }: { children: React.ReactNode; title
     <div className="min-h-screen bg-brand-bg">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="lg:pl-64">
-        <TopBar onMenu={() => setSidebarOpen(true)} title={title} />
+        <TopBar onMenu={() => setSidebarOpen(true)} title={title} subtitle={subtitle} />
         <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>
     </div>

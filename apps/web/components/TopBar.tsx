@@ -17,7 +17,15 @@ function roleLabel(role: string): string {
   return map[role] ?? role;
 }
 
-export function TopBar({ onMenu, title }: { onMenu: () => void; title?: string }) {
+export function TopBar({
+  onMenu,
+  title,
+  subtitle,
+}: {
+  onMenu: () => void;
+  title?: string;
+  subtitle?: string;
+}) {
   const { t, locale, setLocale } = useI18n();
   const { user, logout } = useAuth();
 
@@ -33,9 +41,12 @@ export function TopBar({ onMenu, title }: { onMenu: () => void; title?: string }
         <IconMenu />
       </button>
 
-      <h1 className="flex-1 truncate text-base font-semibold text-slate-800 sm:text-lg">
-        {title ?? t.app.name}
-      </h1>
+      <div className="min-w-0 flex-1 leading-tight">
+        <h1 className="truncate text-base font-semibold text-slate-800 sm:text-lg">
+          {title ?? t.app.name}
+        </h1>
+        {subtitle && <p className="hidden truncate text-xs text-slate-400 sm:block">{subtitle}</p>}
+      </div>
 
       {/* Language toggle */}
       <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5 text-xs font-semibold">
