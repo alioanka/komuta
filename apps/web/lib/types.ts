@@ -1,6 +1,13 @@
 /** Shared client-side types mirroring the API response shapes. */
 
-import type { Role, Permission, OutletType, MappingStatus } from '@komuta/shared';
+import type {
+  Role,
+  Permission,
+  OutletType,
+  MappingStatus,
+  ResolutionStatus,
+  NotificationEvent,
+} from '@komuta/shared';
 
 export interface AuthUser {
   id: string;
@@ -154,6 +161,32 @@ export interface PhoneMapping {
   createdAt: string;
   outlet: { id: string; name: string; code: string } | null;
   employee: { id: string; fullName: string } | null;
+}
+
+export interface WhatsAppMessage {
+  id: string;
+  waMessageId: string;
+  direction: 'IN' | 'OUT';
+  fromPhone: string;
+  toPhone: string;
+  body: string;
+  type: string;
+  status: string | null;
+  parsedAmount: string | null;
+  resolvedOutletId: string | null;
+  resolutionStatus: ResolutionStatus | null;
+  createdAt: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  userId: string | null;
+  channel: string;
+  event: NotificationEvent;
+  title: string;
+  body: string;
+  readAt: string | null;
+  createdAt: string;
 }
 
 export interface UserRow {

@@ -54,3 +54,41 @@ export function formatDateTime(iso: string | null): string {
   if (Number.isNaN(d.getTime())) return '—';
   return d.toLocaleString('tr-TR', { dateStyle: 'medium', timeStyle: 'short' });
 }
+
+/** Time of day, e.g. "14:32". */
+export function formatTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+}
+
+/** Relative time in Turkish: "az önce", "5 dk önce", "3 sa önce", "dün", or "12 Haz". */
+export function formatRelative(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const diffMs = Date.now() - d.getTime();
+  const minutes = Math.floor(diffMs / 60_000);
+  if (minutes < 1) return 'az önce'; // just now
+  if (minutes < 60) return `${minutes} dk önce`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} sa önce`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'dün'; // yesterday
+  if (days < 7) return `${days} gün önce`;
+  return formatDate(iso);
+}
+
+/** Pretty phone display: +90 532 123 45 67. */
+export function formatPhone(phone: string): string {
+  const digits = phone.replace(/[^\d+]/g, '');
+  const m = digits.match(/^\+?90(\d{3})(\d{3})(\d{2})(\d{2})$/);
+  if (m) return `+90 ${m[1]} ${m[2]} ${m[3]} ${m[4]}`;
+  return digits.startsWith('+') ? digits : `+${digits}`;
+}
+
+/** Signed percent, e.g. "+%12,4" / "-%3,1". */
+export function formatPercentDelta(pct: number): string {
+  if (!Number.isFinite(pct)) return '—';
+  const sign = pct > 0 ? '+' : pct < 0 ? '-' : '';
+  return `${sign}%${Math.abs(pct).toFixed(1).replace('.', ',')}`;
+}

@@ -127,6 +127,68 @@ export const IconInbox = (p: IconProps) => (
   </svg>
 );
 
+export const IconSend = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M22 2 11 13" />
+    <path d="M22 2 15 22l-4-9-9-4z" />
+  </svg>
+);
+
+export const IconSearch = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="m21 21-4.35-4.35" />
+  </svg>
+);
+
+export const IconArrowLeft = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M19 12H5M12 19l-7-7 7-7" />
+  </svg>
+);
+
+export const IconAlert = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+    <path d="M12 9v4M12 17h.01" />
+  </svg>
+);
+
+export const IconTrendUp = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M23 6 13.5 15.5 8.5 10.5 1 18" />
+    <path d="M17 6h6v6" />
+  </svg>
+);
+
+export const IconTrendDown = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M23 18 13.5 8.5 8.5 13.5 1 6" />
+    <path d="M17 18h6v-6" />
+  </svg>
+);
+
+export const IconSummary = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <path d="M14 2v6h6M8 13h8M8 17h5" />
+  </svg>
+);
+
+export const IconDoubleCheck = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="m2 12 5 5L17 7" />
+    <path d="m12 17 10-10" />
+  </svg>
+);
+
+export const IconClock = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3 2" />
+  </svg>
+);
+
 export const IconUsers = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
