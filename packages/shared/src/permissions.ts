@@ -109,3 +109,22 @@ export function hasPermission(
 ): boolean {
   return resolvePermissions(role, grants, revokes).has(permission);
 }
+
+/** Role privilege ranking used for assignment checks (higher = more privileged). */
+const ROLE_RANK: Record<Role, number> = {
+  [Role.OWNER]: 5,
+  [Role.ADMIN]: 4,
+  [Role.ACCOUNTANT]: 3,
+  [Role.MANAGER]: 2,
+  [Role.VIEWER]: 1,
+};
+
+/**
+ * May `actorRole` create/assign a user with `targetRole`?
+ * Holding `user:create` alone must never allow privilege escalation: the target
+ * role may not outrank the actor's, and only an OWNER may mint another OWNER.
+ */
+export function canAssignRole(actorRole: Role, targetRole: Role): boolean {
+  if (targetRole === Role.OWNER) return actorRole === Role.OWNER;
+  return ROLE_RANK[targetRole] <= ROLE_RANK[actorRole];
+}

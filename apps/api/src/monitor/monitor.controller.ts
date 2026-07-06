@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
 import { RequirePermissions } from '../common/require-permissions.decorator.js';
 import { CurrentUser, type AuthUser } from '../common/current-user.decorator.js';
 import { MonitorService } from './monitor.service.js';
@@ -18,6 +18,9 @@ export class MonitorController {
   @RequirePermissions('monitor:read')
   @Get('missing')
   missing(@CurrentUser() user: AuthUser, @Query('date') date?: string) {
+    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new BadRequestException('date must be YYYY-MM-DD');
+    }
     const d = date ?? businessDateInTz(new Date(), DEFAULT_TIMEZONE);
     return this.monitor.missingForDate(user, d);
   }
