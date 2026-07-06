@@ -102,6 +102,8 @@ export class AuthService {
       { secret: env.JWT_ACCESS_SECRET, expiresIn: env.JWT_ACCESS_TTL },
     );
 
+    // The refresh JWT carries a jti that doubles as the RefreshToken row id,
+    // giving O(1) revocation lookup on refresh.
     const tokenId = randomUUID();
     const refreshToken = await this.jwt.signAsync(
       { sub: user.id, jti: tokenId },
@@ -110,6 +112,7 @@ export class AuthService {
     const tokenHash = await argon2.hash(refreshToken, { type: argon2.argon2id });
     await this.prisma.refreshToken.create({
       data: {
+        id: tokenId,
         userId: user.id,
         tokenHash,
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
@@ -119,15 +122,36 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  /** Verify a refresh token, rotate it, and return a fresh pair. */
+  /**
+   * Verify a refresh token, rotate it, and return a fresh pair.
+   * The token must (a) carry a valid signature, (b) match a stored, non-revoked,
+   * non-expired RefreshToken row (looked up by jti, verified against its argon2
+   * hash), and (c) belong to an active user. The presented token is revoked on
+   * use (rotation); reuse of an already-revoked token revokes the whole family.
+   */
   async refresh(refreshToken: string): Promise<TokenPair> {
     const env = loadEnv();
-    let payload: { sub: string };
+    let payload: { sub: string; jti?: string };
     try {
       payload = await this.jwt.verifyAsync(refreshToken, { secret: env.JWT_REFRESH_SECRET });
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
+    if (!payload.jti) throw new UnauthorizedException('Invalid refresh token');
+
+    const stored = await this.prisma.refreshToken.findUnique({ where: { id: payload.jti } });
+    if (!stored || stored.userId !== payload.sub) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+    if (stored.revokedAt) {
+      // Reuse of a rotated/revoked token → likely theft; revoke everything.
+      await this.logout(stored.userId);
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+    if (stored.expiresAt <= new Date()) throw new UnauthorizedException('Invalid refresh token');
+
+    const matches = await argon2.verify(stored.tokenHash, refreshToken).catch(() => false);
+    if (!matches) throw new UnauthorizedException('Invalid refresh token');
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
@@ -135,9 +159,9 @@ export class AuthService {
     });
     if (!user || !user.isActive) throw new UnauthorizedException('Invalid refresh token');
 
-    // Revoke prior active tokens for this user (rotation).
-    await this.prisma.refreshToken.updateMany({
-      where: { userId: user.id, revokedAt: null },
+    // Revoke the presented token (rotation) — other sessions stay valid.
+    await this.prisma.refreshToken.update({
+      where: { id: stored.id },
       data: { revokedAt: new Date() },
     });
 
