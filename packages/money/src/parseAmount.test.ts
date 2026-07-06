@@ -135,3 +135,31 @@ describe('parseAmount — exported constant', () => {
     expect(MAX_AMOUNT.toNumber()).toBe(100_000_000);
   });
 });
+
+describe('parseAmount — WhatsApp formatting and negatives', () => {
+  it('parses bold-wrapped amounts (*73256,76*)', () => {
+    const r = parseAmount('*73256,76*');
+    expect(r.status).toBe('OK');
+    expect(r.normalized).toBe('73256.76');
+  });
+
+  it('parses italic/strike/parenthesis-wrapped amounts', () => {
+    expect(parseAmount('_5000_').normalized).toBe('5000.00');
+    expect(parseAmount('~1.250,50~').normalized).toBe('1250.50');
+    expect(parseAmount('(73256.76)').normalized).toBe('73256.76');
+    expect(parseAmount('*₺1.234,56*').normalized).toBe('1234.56');
+  });
+
+  it('rejects explicitly negative amounts instead of dropping the sign', () => {
+    expect(parseAmount('-5000').status).toBe('UNPARSEABLE');
+    expect(parseAmount('-5000').reason).toBe('negative');
+    expect(parseAmount('- 5000').status).toBe('UNPARSEABLE');
+    expect(parseAmount('-1.234,56 TL').status).toBe('UNPARSEABLE');
+    expect(parseAmount('*-5000*').status).toBe('UNPARSEABLE');
+  });
+
+  it('a trailing dash is not treated as a negative sign', () => {
+    // minus only counts when it appears before the first digit
+    expect(parseAmount('5000-').status).toBe('OK');
+  });
+});

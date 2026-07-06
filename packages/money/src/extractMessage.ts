@@ -27,6 +27,16 @@ function stripAttachedCurrency(token: string): string {
   return token.replace(/₺/g, '').replace(ATTACHED_CURRENCY_RE, '');
 }
 
+/**
+ * Strip WhatsApp formatting wrappers (bold *…*, italic _…_, strike ~…~) and
+ * wrapping parentheses from a token, e.g. "*73256,76*" → "73256,76".
+ * Only leading/trailing formatting characters are removed — inner characters
+ * (part of names/codes) are left untouched.
+ */
+function stripFormatting(token: string): string {
+  return token.replace(/^[*_~([]+/, '').replace(/[*_~)\]]+$/, '');
+}
+
 interface Candidate {
   index: number;
   core: string;
@@ -46,10 +56,11 @@ interface Candidate {
 export function extractMessage(body: string | null | undefined): ExtractMessageResult {
   const text = (body ?? '').trim();
   const tokens = text.length > 0 ? text.split(/\s+/) : [];
-  const isCurrency = tokens.map((t) => CURRENCY_RE.test(t));
+  const unformatted = tokens.map((t) => stripFormatting(t));
+  const isCurrency = unformatted.map((t) => CURRENCY_RE.test(t));
 
   const candidates: Candidate[] = [];
-  tokens.forEach((token, i) => {
+  unformatted.forEach((token, i) => {
     if (isCurrency[i]) return;
     const core = stripAttachedCurrency(token);
     if (!NUMERIC_RE.test(core)) return;

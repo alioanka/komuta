@@ -102,3 +102,43 @@ describe('extractMessage — no amount', () => {
     expect(r.prefixTokens).toEqual([]);
   });
 });
+
+describe('extractMessage — WhatsApp formatting characters', () => {
+  it('extracts a bold-wrapped amount: "*73256,76*"', () => {
+    const r = extractMessage('*73256,76*');
+    expect(r.amountStatus).toBe('OK');
+    expect(r.amount?.toFixed(2)).toBe('73256.76');
+  });
+
+  it('extracts amount with bold store prefix: "*Çamlıca* 73256,76"', () => {
+    const r = extractMessage('*Çamlıca* 73256,76');
+    expect(r.amountStatus).toBe('OK');
+    expect(r.amount?.toFixed(2)).toBe('73256.76');
+    expect(r.prefixTokens).toEqual(['*Çamlıca*']);
+  });
+
+  it('recognises formatted currency markers: "*5000* *TL*"', () => {
+    const r = extractMessage('*5000* *TL*');
+    expect(r.amountStatus).toBe('OK');
+    expect(r.amount?.toFixed(2)).toBe('5000.00');
+    expect(r.amountConfidence).toBe('high');
+  });
+
+  it('italic and strike wrappers are stripped too', () => {
+    expect(extractMessage('_1234,50_').amount?.toFixed(2)).toBe('1234.50');
+    expect(extractMessage('~999~').amount?.toFixed(2)).toBe('999.00');
+    expect(extractMessage('(1.250,00)').amount?.toFixed(2)).toBe('1250.00');
+  });
+
+  it('negative numbers are not picked up as amounts', () => {
+    const r = extractMessage('-5000');
+    expect(r.amountStatus).toBe('UNPARSEABLE');
+    expect(r.amount).toBeNull();
+  });
+
+  it('inner formatting characters within words are preserved for prefixes', () => {
+    const r = extractMessage('a*b 5000');
+    expect(r.amount?.toFixed(2)).toBe('5000.00');
+    expect(r.prefixTokens).toEqual(['a*b']);
+  });
+});

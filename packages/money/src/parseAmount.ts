@@ -43,6 +43,14 @@ export function parseAmount(raw: string | null | undefined, opts: ParseAmountOpt
   let s = String(raw).trim();
   if (s.length === 0) return fail('UNPARSEABLE', 'empty');
 
+  // 0. Strip WhatsApp formatting characters (bold *…*, italic _…_, strike ~…~)
+  //    and wrapping parentheses: "*73256,76*" is the same amount as 73256,76.
+  s = s.replace(/[*_~()[\]]/g, '');
+
+  // 0b. Reject explicitly negative amounts (a minus sign before the first
+  //     digit) instead of silently dropping the sign.
+  if (/^[^0-9]*-/.test(s)) return fail('UNPARSEABLE', 'negative');
+
   // 1. Strip currency tokens case-insensitively (TL, TRY, ₺, tl., try.).
   s = s.replace(/₺/g, ' ');
   s = s.replace(/\b(?:tl|try)\b\.?/gi, ' ');
