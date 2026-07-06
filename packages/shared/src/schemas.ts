@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import { OutletType, Role, NotificationChannel, NotificationEvent } from './enums.js';
+import {
+  OutletType,
+  Role,
+  NotificationChannel,
+  NotificationEvent,
+  TemplateCategory,
+  TemplateStatus,
+} from './enums.js';
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '@komuta/config';
 
 /** A YYYY-MM-DD calendar date. */
@@ -128,6 +135,18 @@ export const sendMessageSchema = z.object({
   body: z.string().max(4096).optional(),
   templateName: z.string().optional(),
   templateVars: z.array(z.string()).optional(),
+});
+
+// --- Message templates ---
+export const createTemplateSchema = z.object({
+  name: z.string().min(2).max(120),
+  metaTemplateName: z.string().min(2).max(120),
+  language: z.string().min(2).max(10).default('tr'),
+  category: z.nativeEnum(TemplateCategory).default(TemplateCategory.UTILITY),
+});
+
+export const updateTemplateStatusSchema = z.object({
+  status: z.nativeEnum(TemplateStatus),
 });
 
 // --- Notifications ---
