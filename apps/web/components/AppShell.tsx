@@ -28,8 +28,11 @@ export function AppShell({
 
   if (loading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-brand-bg">
-        <Spinner className="h-8 w-8" />
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-brand-bg">
+        <span className="flex h-12 w-12 animate-fade-up items-center justify-center rounded-2xl bg-brand text-lg font-bold text-white shadow-lg">
+          K
+        </span>
+        <Spinner className="h-6 w-6" />
       </div>
     );
   }

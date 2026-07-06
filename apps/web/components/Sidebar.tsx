@@ -35,16 +35,32 @@ interface NavItem {
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }
 
-const NAV: NavItem[] = [
-  { key: 'overview', href: '/', icon: IconOverview },
-  { key: 'companies', href: '/firmalar', icon: IconCompanies },
-  { key: 'outlets', href: '/sube', icon: IconOutlet },
-  { key: 'monitor', href: '/monitor', icon: IconMonitor },
-  { key: 'mapping', href: '/eslestirme', icon: IconMapping },
-  { key: 'accounting', href: '/muhasebe', icon: IconAccounting },
-  { key: 'messages', href: '/mesajlar', icon: IconMessages },
-  { key: 'notifications', href: '/bildirimler', icon: IconBell },
-  { key: 'settings', href: '/ayarlar', icon: IconSettings },
+interface NavSection {
+  /** Turkish section label (English in comment). */
+  label: string;
+  items: NavItem[];
+}
+
+const NAV_SECTIONS: NavSection[] = [
+  {
+    label: 'Operasyon', // Operations
+    items: [
+      { key: 'overview', href: '/', icon: IconOverview },
+      { key: 'monitor', href: '/monitor', icon: IconMonitor },
+      { key: 'messages', href: '/mesajlar', icon: IconMessages },
+      { key: 'mapping', href: '/eslestirme', icon: IconMapping },
+      { key: 'notifications', href: '/bildirimler', icon: IconBell },
+    ],
+  },
+  {
+    label: 'Yönetim', // Management
+    items: [
+      { key: 'companies', href: '/firmalar', icon: IconCompanies },
+      { key: 'outlets', href: '/sube', icon: IconOutlet },
+      { key: 'accounting', href: '/muhasebe', icon: IconAccounting },
+      { key: 'settings', href: '/ayarlar', icon: IconSettings },
+    ],
+  },
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -91,31 +107,49 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           </button>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
-          {NAV.map((item) => {
-            const active = isActive(pathname, item.href);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.key}
-                href={item.href}
-                onClick={onClose}
-                className={cn(
-                  'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
-                  active
-                    ? 'bg-white/10 text-white shadow-sm'
-                    : 'text-slate-300 hover:bg-white/5 hover:text-white',
-                )}
-              >
-                <Icon
-                  width={19}
-                  height={19}
-                  className={active ? 'text-brand-accent' : 'text-slate-400 group-hover:text-slate-200'}
-                />
-                {t.nav[item.key]}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-3 scrollbar-thin">
+          {NAV_SECTIONS.map((section) => (
+            <div key={section.label}>
+              <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {section.label}
+              </p>
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  const active = isActive(pathname, item.href);
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.key}
+                      href={item.href}
+                      onClick={onClose}
+                      className={cn(
+                        'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                        'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent/50',
+                        active
+                          ? 'bg-white/10 text-white shadow-sm'
+                          : 'text-slate-300 hover:bg-white/5 hover:text-white',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-brand-accent transition-opacity',
+                          active ? 'opacity-100' : 'opacity-0',
+                        )}
+                      />
+                      <Icon
+                        width={19}
+                        height={19}
+                        className={
+                          active ? 'text-brand-accent' : 'text-slate-400 group-hover:text-slate-200'
+                        }
+                      />
+                      {t.nav[item.key]}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         <div className="px-5 py-4 text-[11px] text-slate-500">

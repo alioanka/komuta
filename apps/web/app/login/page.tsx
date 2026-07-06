@@ -9,6 +9,7 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { ApiError } from '@/lib/api';
 import { Button, Card, Field, Input, cn } from '@/components/ui';
+import { IconAlert } from '@/components/icons';
 
 export default function LoginPage() {
   const { t, locale, setLocale } = useI18n();
@@ -46,7 +47,8 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0f1b3d] px-4">
-      {/* Decorative gradient blobs */}
+      {/* Decorative gradient blobs + subtle vertical wash */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-brand/20 via-transparent to-brand-accent/10" />
       <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-brand-accent/20 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-40 -right-24 h-96 w-96 rounded-full bg-brand/40 blur-3xl" />
 
@@ -81,10 +83,16 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 autoComplete="email"
+                autoFocus
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (error) setError(null);
+                }}
                 placeholder="ozer@komuta.com"
+                aria-invalid={!!error}
+                className={cn(error && 'border-red-300 focus:border-red-400 focus:ring-red-100')}
               />
             </Field>
 
@@ -95,13 +103,22 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (error) setError(null);
+                }}
                 placeholder="••••••••"
+                aria-invalid={!!error}
+                className={cn(error && 'border-red-300 focus:border-red-400 focus:ring-red-100')}
               />
             </Field>
 
             {error && (
-              <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 ring-1 ring-red-600/10">
+              <p
+                role="alert"
+                className="flex items-start gap-2 rounded-lg bg-red-50 px-3 py-2.5 text-sm text-red-600 ring-1 ring-red-600/10"
+              >
+                <IconAlert width={16} height={16} className="mt-0.5 shrink-0" />
                 {error}
               </p>
             )}
