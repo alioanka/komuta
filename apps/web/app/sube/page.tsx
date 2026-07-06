@@ -66,7 +66,7 @@ export default function OutletsPage() {
   ];
 
   return (
-    <AppShell title={t.nav.outlets}>
+    <AppShell title={t.nav.outlets} subtitle="Tüm şubeler ve günlük ciro ayarları">
       {outlets.isError ? (
         <ErrorState message={(outlets.error as Error).message} onRetry={() => outlets.refetch()} />
       ) : (

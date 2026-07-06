@@ -84,7 +84,7 @@ export default function OutletDetailPage() {
   const latestRevenue = data?.revenue[0];
 
   return (
-    <AppShell title={data?.outlet.name ?? t.domain.outlet}>
+    <AppShell title={data?.outlet.name ?? t.domain.outlet} subtitle="Şube detayı ve geçmiş kayıtlar">
       <div className="mb-5">
         <Link href="/monitor" className="text-sm text-slate-500 hover:text-brand">
           ← {t.nav.monitor}

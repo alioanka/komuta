@@ -42,7 +42,7 @@ export default function AccountingPage() {
   const outletOptions = outlets.data ?? [];
 
   return (
-    <AppShell title={t.nav.accounting}>
+    <AppShell title={t.nav.accounting} subtitle="Aylık maaş, alım ve envanter girişleri">
       <div className="space-y-5">
         {/* Tabs */}
         <div className="flex flex-wrap gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5">

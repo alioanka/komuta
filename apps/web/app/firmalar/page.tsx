@@ -21,7 +21,7 @@ export default function CompaniesPage() {
   });
 
   return (
-    <AppShell title={t.nav.companies}>
+    <AppShell title={t.nav.companies} subtitle="Firma portföyü ve markalar">
       {companies.isError ? (
         <ErrorState message={(companies.error as Error).message} onRetry={() => companies.refetch()} />
       ) : companies.isLoading ? (

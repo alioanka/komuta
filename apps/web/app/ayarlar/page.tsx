@@ -58,7 +58,7 @@ export default function SettingsPage() {
   ];
 
   return (
-    <AppShell title={t.nav.settings}>
+    <AppShell title={t.nav.settings} subtitle="Sistem, kullanıcı ve bildirim ayarları">
       <div className="space-y-6">
         <Card>
           <CardHeader title="Kullanıcılar" subtitle="Panele erişimi olan kişiler" />

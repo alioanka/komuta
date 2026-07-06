@@ -51,7 +51,7 @@ export default function MappingPage() {
   const rows = mappings.data ?? [];
 
   return (
-    <AppShell title={t.nav.mapping}>
+    <AppShell title={t.nav.mapping} subtitle="WhatsApp gönderenlerini şubelerle eşleştirin">
       <div className="space-y-5">
         <Card>
           <CardHeader
