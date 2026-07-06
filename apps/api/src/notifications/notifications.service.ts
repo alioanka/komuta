@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Subject } from 'rxjs';
 import type { NotificationChannel, NotificationEvent } from '@komuta/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { TelegramService } from './telegram.service.js';
+import { TelegramService, escapeTelegramHtml } from './telegram.service.js';
 import { OutboundService } from '../whatsapp/outbound.service.js';
 
 export interface DispatchInput {
@@ -59,7 +59,10 @@ export class NotificationsService {
         } else if (channel === 'TELEGRAM') {
           const chatIds = rule.targetTelegramChatIds.length > 0 ? rule.targetTelegramChatIds : [undefined];
           for (const chatId of chatIds) {
-            await this.telegram.sendMessage(`<b>${input.title}</b>\n${input.body}`, chatId);
+            await this.telegram.sendMessage(
+              `<b>${escapeTelegramHtml(input.title)}</b>\n${escapeTelegramHtml(input.body)}`,
+              chatId,
+            );
           }
         } else if (channel === 'WHATSAPP') {
           const phone = (input.payload?.toPhone as string | undefined) ?? undefined;

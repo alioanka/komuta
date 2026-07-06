@@ -1,6 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { loadEnv } from '../config/env.js';
 
+/**
+ * Escape user-controlled text for Telegram parse_mode=HTML. Unescaped '<'
+ * (e.g. a WhatsApp body "ciro <5000") makes Telegram reject the whole message,
+ * silently dropping the alert.
+ */
+export function escapeTelegramHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 @Injectable()
 export class TelegramService {
   private readonly logger = new Logger(TelegramService.name);

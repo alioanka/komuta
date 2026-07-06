@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { sendTelegram } from '../telegram.js';
+import { sendTelegram, escapeTelegramHtml } from '../telegram.js';
 import { env } from '../env.js';
 
 function businessDateInTz(date: Date, timeZone: string): string {
@@ -59,7 +59,7 @@ export async function runMissingRevenueScan(prisma: PrismaClient): Promise<{ mis
       } else if (channel === 'TELEGRAM') {
         const chatIds = rule.targetTelegramChatIds.length > 0 ? rule.targetTelegramChatIds : [undefined];
         for (const chatId of chatIds) {
-          await sendTelegram(`<b>${title}</b>\n${body}`, chatId);
+          await sendTelegram(`<b>${escapeTelegramHtml(title)}</b>\n${escapeTelegramHtml(body)}`, chatId);
         }
       }
     }

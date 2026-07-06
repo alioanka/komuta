@@ -1,5 +1,10 @@
 import { env } from './env.js';
 
+/** Escape user-controlled text for parse_mode=HTML (unescaped '<' rejects the send). */
+export function escapeTelegramHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 /** Lightweight Telegram sender (standalone — worker does not import the Nest app). */
 export async function sendTelegram(text: string, chatId?: string): Promise<boolean> {
   const token = env.TELEGRAM_BOT_TOKEN;
