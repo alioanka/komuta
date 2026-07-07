@@ -141,6 +141,9 @@ model Outlet {
   isActive           Boolean    @default(true)
   expectsDailyRevenue Boolean   @default(true)
   reportingTimezone  String     @default("Europe/Istanbul")
+  // Current student headcount, set at branch creation/settings (canteens).
+  studentOrtaokul    Int?
+  studentLise        Int?
   createdAt          DateTime   @default(now())
 
   company           Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -238,6 +241,8 @@ model User {
   lockedUntil  DateTime?
   totpSecret   String?
   totpEnabled  Boolean  @default(false)
+  // Per-user Genel Bakış (dashboard) widget layout/visibility + filters.
+  dashboardConfig Json?
   grantedPermissions String[] @default([])
   revokedPermissions String[] @default([])
   createdAt    DateTime @default(now())
