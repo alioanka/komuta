@@ -3,6 +3,7 @@ import {
   OutletType,
   Role,
   MappingStatus,
+  EntryStatus,
   NotificationChannel,
   NotificationEvent,
   TemplateCategory,
@@ -139,6 +140,20 @@ export const createRevenueSchema = z.object({
   note: z.string().max(500).optional(),
 });
 
+export const updateRevenueSchema = z.object({
+  amount: moneySchema.optional(),
+  businessDate: businessDateSchema.optional(),
+  note: z.string().max(500).nullish(),
+  status: z.nativeEnum(EntryStatus).optional(),
+});
+
+export const listRevenueQuerySchema = paginationSchema.extend({
+  outletId: z.string().optional(),
+  status: z.nativeEnum(EntryStatus).optional(),
+  from: businessDateSchema.optional(),
+  to: businessDateSchema.optional(),
+});
+
 // --- Monthly accounting entries ---
 export const payrollSchema = z.object({
   outletId: z.string(),
@@ -173,6 +188,37 @@ export const headcountSchema = z.object({
   periodMonth: periodMonthSchema,
   employeeCount: z.coerce.number().int().min(0),
   reason: z.string().max(300).optional(),
+});
+
+// Partial edits of existing accounting rows (row id in the URL).
+export const updatePayrollSchema = z.object({
+  periodMonth: periodMonthSchema.optional(),
+  totalSalary: moneySchema.optional(),
+  employeeCount: z.coerce.number().int().min(0).nullish(),
+});
+
+export const updatePurchaseSchema = z.object({
+  periodMonth: periodMonthSchema.optional(),
+  amount: moneySchema.optional(),
+  note: z.string().max(500).nullish(),
+});
+
+export const updateInventorySchema = z.object({
+  asOfDate: businessDateSchema.optional(),
+  stockValue: moneySchema.optional(),
+  note: z.string().max(500).nullish(),
+});
+
+export const updateStudentCountSchema = z.object({
+  periodMonth: periodMonthSchema.optional(),
+  ortaokul: z.coerce.number().int().min(0).optional(),
+  lise: z.coerce.number().int().min(0).optional(),
+});
+
+export const updateHeadcountSchema = z.object({
+  periodMonth: periodMonthSchema.optional(),
+  employeeCount: z.coerce.number().int().min(0).optional(),
+  reason: z.string().max(300).nullish(),
 });
 
 // --- Mappings ---
@@ -235,6 +281,13 @@ export type CreateEmployeeInput = z.infer<typeof createEmployeeSchema>;
 export type UpdateEmployeeInput = z.infer<typeof updateEmployeeSchema>;
 export type CreateMappingInput = z.infer<typeof createMappingSchema>;
 export type UpdateMappingInput = z.infer<typeof updateMappingSchema>;
+export type UpdateRevenueInput = z.infer<typeof updateRevenueSchema>;
+export type ListRevenueQuery = z.infer<typeof listRevenueQuerySchema>;
+export type UpdatePayrollInput = z.infer<typeof updatePayrollSchema>;
+export type UpdatePurchaseInput = z.infer<typeof updatePurchaseSchema>;
+export type UpdateInventoryInput = z.infer<typeof updateInventorySchema>;
+export type UpdateStudentCountInput = z.infer<typeof updateStudentCountSchema>;
+export type UpdateHeadcountInput = z.infer<typeof updateHeadcountSchema>;
 export type CreateOutletInput = z.infer<typeof createOutletSchema>;
 export type CreateRevenueInput = z.infer<typeof createRevenueSchema>;
 export type SendMessageInput = z.infer<typeof sendMessageSchema>;
