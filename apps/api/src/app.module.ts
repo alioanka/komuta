@@ -19,6 +19,7 @@ import { UsersModule } from './users/users.module.js';
 import { MappingsModule } from './mappings/mappings.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { MessagesModule } from './messages/messages.module.js';
+import { ReportsModule } from './reports/reports.module.js';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { MessagesModule } from './messages/messages.module.js';
     MappingsModule,
     NotificationsModule,
     MessagesModule,
+    ReportsModule,
   ],
   controllers: [HealthController],
   providers: [
