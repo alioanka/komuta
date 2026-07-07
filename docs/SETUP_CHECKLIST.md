@@ -133,8 +133,8 @@ Legend:
 ## I. First deploy
 
 - [ ] `docker compose up -d --build`.
-- [ ] `docker compose exec api pnpm db:deploy` (migrations).
-- [ ] `docker compose exec api pnpm db:seed` (**once**).
+- [ ] `docker compose exec -T api npx --yes prisma@5.22.0 migrate deploy --schema prisma/schema.prisma` (migrations).
+- [ ] `docker compose exec -T api npx --yes tsx prisma/seed.ts` (**once**).
 - [ ] Verify health: `curl -I https://komuta.app/api/health`.
   📄 [`02_DEPLOYMENT_CONTABO.md`](./02_DEPLOYMENT_CONTABO.md) §4–7
 
