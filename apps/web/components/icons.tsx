@@ -189,6 +189,55 @@ export const IconClock = (p: IconProps) => (
   </svg>
 );
 
+export const IconPlus = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+
+export const IconEdit = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+    <path d="m15 5 4 4" />
+  </svg>
+);
+
+export const IconTrash = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M3 6h18" />
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    <path d="M10 11v6M14 11v6" />
+  </svg>
+);
+
+export const IconKey = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="7.5" cy="15.5" r="4.5" />
+    <path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3" />
+  </svg>
+);
+
+export const IconBan = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="m5.6 5.6 12.8 12.8" />
+  </svg>
+);
+
+export const IconPhone = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+  </svg>
+);
+
+export const IconTag = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 2H2v10l9.29 9.29a1 1 0 0 0 1.42 0l8.58-8.58a1 1 0 0 0 0-1.42Z" />
+    <path d="M7 7h.01" />
+  </svg>
+);
+
 export const IconUsers = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />

@@ -182,6 +182,61 @@ export function Field({
   );
 }
 
+/* ------------------------------------------------------------- Switch --- */
+export function Switch({
+  checked,
+  onChange,
+  disabled,
+  label,
+  description,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  disabled?: boolean;
+  label?: string;
+  description?: string;
+}) {
+  const toggle = (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={cn(
+        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
+        checked ? 'bg-brand' : 'bg-slate-200',
+        disabled && 'cursor-not-allowed opacity-50',
+      )}
+    >
+      <span
+        className={cn(
+          'inline-block h-[18px] w-[18px] transform rounded-full bg-white shadow transition-transform',
+          checked ? 'translate-x-[22px]' : 'translate-x-[3px]',
+        )}
+      />
+    </button>
+  );
+
+  if (!label) return toggle;
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-slate-700">{label}</p>
+        {description && <p className="mt-0.5 text-xs text-slate-400">{description}</p>}
+      </div>
+      {toggle}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------- FieldError --- */
+export function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className="mt-1 text-xs font-medium text-brand-danger">{message}</p>;
+}
+
 /* ------------------------------------------------------- States/Empty --- */
 export function Spinner({ className }: { className?: string }) {
   return (

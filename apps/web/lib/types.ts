@@ -189,6 +189,13 @@ export interface NotificationItem {
   createdAt: string;
 }
 
+export interface UserScopeItem {
+  companyId: string | null;
+  outletId: string | null;
+  company?: { name: string } | null;
+  outlet?: { name: string } | null;
+}
+
 export interface UserRow {
   id: string;
   email: string;
@@ -196,4 +203,21 @@ export interface UserRow {
   role: Role;
   isActive: boolean;
   lastLoginAt: string | null;
+  phoneE164?: string | null;
+  grantedPermissions?: Permission[];
+  revokedPermissions?: Permission[];
+  scopes?: UserScopeItem[];
+}
+
+export interface PermissionsMeta {
+  permissions: Permission[];
+  rolePermissions: Record<Role, Permission[]>;
+}
+
+export interface Employee {
+  id: string;
+  fullName: string;
+  outletId: string | null;
+  isActive?: boolean;
+  outlet?: { id: string; name: string; code?: string } | null;
 }

@@ -5,18 +5,8 @@ import { useAuth } from '@/lib/auth';
 import { Button, cn } from '@/components/ui';
 import { IconMenu, IconLogout } from '@/components/icons';
 import { NotificationsBell } from '@/components/NotificationsBell';
+import { roleLabel } from '@/lib/labels';
 import type { Locale } from '@komuta/shared';
-
-function roleLabel(role: string): string {
-  const map: Record<string, string> = {
-    OWNER: 'Sahip',
-    ADMIN: 'Yönetici',
-    ACCOUNTANT: 'Muhasebe',
-    MANAGER: 'Müdür',
-    VIEWER: 'İzleyici',
-  };
-  return map[role] ?? role;
-}
 
 export function TopBar({
   onMenu,
