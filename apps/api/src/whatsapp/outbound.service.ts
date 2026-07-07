@@ -28,11 +28,21 @@ export class OutboundService {
     return `https://graph.facebook.com/${env.META_GRAPH_VERSION}/${path}`;
   }
 
-  /** Is the 24h service window open for this phone? */
+  /**
+   * Is the 24h service window open for this phone?
+   * Source of truth is the inbound message log, NOT PhoneMapping.lastInboundAt:
+   * unknown senders (NEEDS_STORE_ID) have no mapping row yet, but their inbound
+   * message still opens the window. `createdAt` is our receive time — close
+   * enough to Meta's window semantics.
+   */
   async isWindowOpen(phoneE164: string): Promise<boolean> {
-    const mapping = await this.prisma.phoneMapping.findUnique({ where: { phoneE164 } });
-    if (!mapping?.lastInboundAt) return false;
-    return Date.now() - mapping.lastInboundAt.getTime() < WHATSAPP_SERVICE_WINDOW_MS;
+    const lastInbound = await this.prisma.whatsAppMessage.findFirst({
+      where: { fromPhone: phoneE164, direction: 'IN' },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+    if (!lastInbound) return false;
+    return Date.now() - lastInbound.createdAt.getTime() < WHATSAPP_SERVICE_WINDOW_MS;
   }
 
   /** Auto-select free-form text (window open) vs template (closed). */
