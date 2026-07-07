@@ -9,19 +9,24 @@ import { apiFetch } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { AppShell } from '@/components/AppShell';
 import { DataTable, type Column } from '@/components/DataTable';
-import { Badge, Card, CardHeader, EmptyState, ErrorState, Input, Select, Skeleton } from '@/components/ui';
+import { Badge, Button, Card, CardHeader, EmptyState, ErrorState, Input, Select, Skeleton } from '@/components/ui';
+import { OutletFormModal } from '@/components/admin/OutletFormModal';
 import { outletTypeLabel } from '@/lib/labels';
-import type { Outlet } from '@/lib/types';
+import { useAuth } from '@/lib/auth';
+import type { Company, Outlet } from '@/lib/types';
 
 export default function OutletsPage() {
   const { t } = useI18n();
+  const { can } = useAuth();
   const [search, setSearch] = useState('');
   const [company, setCompany] = useState('');
+  const [formOpen, setFormOpen] = useState(false);
 
   const outlets = useQuery({
     queryKey: ['outlets'],
     queryFn: () => apiFetch<Outlet[]>('/outlets'),
   });
+  const companiesQ = useQuery({ queryKey: ['companies'], queryFn: () => apiFetch<Company[]>('/companies') });
 
   const companies = useMemo(() => {
     const map = new Map<string, string>();
@@ -47,9 +52,15 @@ export default function OutletsPage() {
       key: 'name',
       header: t.domain.outlet,
       render: (o) => (
-        <Link href={`/sube/${o.id}`} className="font-medium text-slate-800 hover:text-brand">
-          {o.name}
-        </Link>
+        <span className="flex items-center gap-2">
+          <Link
+            href={`/sube/${o.id}`}
+            className={`font-medium hover:text-brand ${o.isActive ? 'text-slate-800' : 'text-slate-400'}`}
+          >
+            {o.name}
+          </Link>
+          {!o.isActive && <Badge tone="neutral">Pasif</Badge>}
+        </span>
       ),
     },
     { key: 'company', header: t.domain.company, render: (o) => o.company.name },
@@ -89,7 +100,17 @@ export default function OutletsPage() {
           </div>
 
           <Card>
-            <CardHeader title={t.nav.outlets} subtitle={`${filtered.length} şube`} />
+            <CardHeader
+              title={t.nav.outlets}
+              subtitle={`${filtered.length} şube`}
+              action={
+                can('outlet:create') ? (
+                  <Button size="sm" onClick={() => setFormOpen(true)}>
+                    Yeni Şube
+                  </Button>
+                ) : undefined
+              }
+            />
             {outlets.isLoading ? (
               <div className="p-5">
                 <Skeleton className="h-64 w-full" />
@@ -104,6 +125,12 @@ export default function OutletsPage() {
           </Card>
         </div>
       )}
+
+      <OutletFormModal
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        companies={companiesQ.data ?? []}
+      />
     </AppShell>
   );
 }
