@@ -52,7 +52,10 @@ added). **Nothing in the BrewIQ configuration is modified at any step.**
 
 ### 0.4 Create a system-user token for Komuta
 1. <https://business.facebook.com/settings> → make sure **Bakır Kupa** portfolio is
-   selected → **Users → System users** → **Add** → name `Komuta Bot`, role **Admin**.
+   selected → **Users → System users** → **Add** → name `Komuta Bot`, role
+   **Employee**. (Meta allows only **1 Admin** system user per business at this tier
+   and `EspressoLab Bot` already holds it — Employee works identically for API tokens
+   once the assets below are assigned with full control.)
 2. On `Komuta Bot` → **Add assets**:
    - **Apps → Komuta** → toggle **Manage app** (full control).
    - **WhatsApp accounts → BakirKupa** → toggle **Manage WhatsApp business account**.
@@ -60,6 +63,10 @@ added). **Nothing in the BrewIQ configuration is modified at any step.**
    `whatsapp_business_messaging` + `whatsapp_business_management`
    (+ `whatsapp_business_manage_events` optional) → **Generate token** → copy it
    **once** → `WHATSAPP_ACCESS_TOKEN`.
+
+> ⚠️ **Never click "Revoke tokens" on `EspressoLab Bot`** — that would invalidate the
+> token BrewIQ runs on and break its notifications instantly. Generating new tokens is
+> always safe; revoking is the dangerous button.
 
 ### 0.5 Subscribe the Komuta app to the shared WABA (one command)
 ```bash
