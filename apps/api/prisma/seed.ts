@@ -133,7 +133,13 @@ async function main(): Promise<void> {
   await prisma.user.upsert({
     where: { email: ownerEmail },
     update: {},
-    create: { email: ownerEmail, fullName: 'Özer Kaya', role: 'OWNER', passwordHash: await hash(ownerPw) },
+    create: {
+      email: ownerEmail,
+      fullName: 'Özer Kaya',
+      role: 'OWNER',
+      passwordHash: await hash(ownerPw),
+      phoneE164: process.env.SEED_OWNER_PHONE ?? null,
+    },
   });
   await prisma.user.upsert({
     where: { email: accEmail },
