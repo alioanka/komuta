@@ -31,6 +31,11 @@ sleep 5
 echo "==> Applying database migrations"
 docker compose exec -T api npx --yes prisma@5.22.0 migrate deploy --schema prisma/schema.prisma
 
+# Nginx resolves upstream container IPs once at startup; recreated api/web
+# containers get new IPs, leaving nginx proxying to dead ones (502s).
+echo "==> Restarting nginx to pick up new upstream container IPs"
+docker compose restart nginx
+
 echo "==> Pruning dangling images"
 docker image prune -f
 
