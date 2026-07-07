@@ -1,5 +1,22 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
-import { createCompanySchema, createBrandSchema } from '@komuta/shared';
+import {
+  Body,
+  ConflictException,
+  Controller,
+  Delete,
+  Get,
+  NotFoundException,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
+import {
+  createCompanySchema,
+  createBrandSchema,
+  updateCompanySchema,
+  updateBrandSchema,
+  type UpdateCompanyInput,
+  type UpdateBrandInput,
+} from '@komuta/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RequirePermissions } from '../common/require-permissions.decorator.js';
 import { CurrentUser, type AuthUser } from '../common/current-user.decorator.js';
@@ -47,5 +64,59 @@ export class CompaniesController {
     return this.prisma.brand.create({
       data: { companyId: body.companyId, name: body.name, slug: body.slug ?? slugify(body.name) },
     });
+  }
+
+  @RequirePermissions('brand:update')
+  @Patch('brand/:id')
+  async updateBrand(
+    @Param('id') id: string,
+    @Body(new ZodPipe(updateBrandSchema)) body: UpdateBrandInput,
+  ) {
+    const brand = await this.prisma.brand.findUnique({ where: { id } });
+    if (!brand) throw new NotFoundException('Brand not found');
+    return this.prisma.brand.update({ where: { id }, data: { name: body.name } });
+  }
+
+  @RequirePermissions('brand:update')
+  @Delete('brand/:id')
+  async removeBrand(@Param('id') id: string) {
+    const brand = await this.prisma.brand.findUnique({
+      where: { id },
+      include: { _count: { select: { outlets: true } } },
+    });
+    if (!brand) throw new NotFoundException('Brand not found');
+    if (brand._count.outlets > 0) {
+      throw new ConflictException('Brand still has outlets attached; reassign them first');
+    }
+    return this.prisma.brand.delete({ where: { id } });
+  }
+
+  @RequirePermissions('company:update')
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Body(new ZodPipe(updateCompanySchema)) body: UpdateCompanyInput,
+  ) {
+    const company = await this.prisma.company.findUnique({ where: { id } });
+    if (!company) throw new NotFoundException('Company not found');
+    return this.prisma.company.update({
+      where: { id },
+      data: { name: body.name, isActive: body.isActive },
+    });
+  }
+
+  /** Hard delete — OWNER only (via company:delete). Refused while outlets exist. */
+  @RequirePermissions('company:delete')
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { id },
+      include: { _count: { select: { outlets: true } } },
+    });
+    if (!company) throw new NotFoundException('Company not found');
+    if (company._count.outlets > 0) {
+      throw new ConflictException('Company still has outlets; delete or move them first');
+    }
+    return this.prisma.company.delete({ where: { id } });
   }
 }
