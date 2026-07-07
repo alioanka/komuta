@@ -65,8 +65,21 @@ export class NotificationsService {
             );
           }
         } else if (channel === 'WHATSAPP') {
-          const phone = (input.payload?.toPhone as string | undefined) ?? undefined;
-          if (phone) {
+          const explicit = (input.payload?.toPhone as string | undefined) ?? undefined;
+          // No explicit phone → notify the rule's target users on their own
+          // numbers (User.phoneE164). Template fallback is handled by
+          // OutboundService.sendMessage (24h window check).
+          let phones: string[] = [];
+          if (explicit) {
+            phones = [explicit];
+          } else if (rule.targetUserIds.length > 0) {
+            const users = await this.prisma.user.findMany({
+              where: { id: { in: rule.targetUserIds }, isActive: true, phoneE164: { not: null } },
+              select: { phoneE164: true },
+            });
+            phones = users.flatMap((u) => (u.phoneE164 ? [u.phoneE164] : []));
+          }
+          for (const phone of phones) {
             await this.outbound.sendMessage(phone, {
               body: `${input.title}\n${input.body}`,
               templateName: input.payload?.templateName as string | undefined,
