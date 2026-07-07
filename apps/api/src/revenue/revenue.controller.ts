@@ -14,9 +14,12 @@ import {
 import {
   createRevenueSchema,
   updateRevenueSchema,
+  revenueImportSchema,
   type EntryStatus,
   type UpdateRevenueInput,
+  type RevenueImportInput,
 } from '@komuta/shared';
+import { parseAmount } from '@komuta/money';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RequirePermissions } from '../common/require-permissions.decorator.js';
 import { CurrentUser, type AuthUser } from '../common/current-user.decorator.js';
@@ -123,6 +126,76 @@ export class RevenueController {
         note: body.note,
       },
     });
+  }
+
+  /**
+   * Bulk historical import. Each row is resolved by outlet `code`, scope-checked
+   * and amount-parsed independently; a single bad row never aborts the batch —
+   * failures are accumulated and reported. CONFIRMED rows supersede the prior
+   * confirmed entry for their (outlet, businessDate), matching manual create.
+   */
+  @RequirePermissions('revenue:write')
+  @Post('import')
+  async import(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodPipe(revenueImportSchema)) body: RevenueImportInput,
+  ) {
+    const scopedOutlets = await this.prisma.outlet.findMany({
+      where: outletScopeWhere(user),
+      select: { id: true, code: true },
+    });
+    const byCode = new Map(scopedOutlets.map((o) => [o.code, o.id]));
+
+    let imported = 0;
+    let skipped = 0;
+    const errors: { row: number; storeCode: string; reason: string }[] = [];
+
+    for (let i = 0; i < body.rows.length; i++) {
+      const row = body.rows[i]!;
+      try {
+        const outletId = byCode.get(row.storeCode);
+        if (!outletId) {
+          skipped++;
+          errors.push({ row: i, storeCode: row.storeCode, reason: 'Unknown or out-of-scope store code' });
+          continue;
+        }
+        const raw = typeof row.amount === 'number' ? String(row.amount) : row.amount;
+        const parsed = parseAmount(raw);
+        if (parsed.status !== 'OK' || !parsed.normalized) {
+          skipped++;
+          errors.push({ row: i, storeCode: row.storeCode, reason: `Unparseable amount (${parsed.status})` });
+          continue;
+        }
+        const businessDate = dateOnly(row.date);
+        const status = body.defaultStatus;
+        if (status === 'CONFIRMED') {
+          await this.prisma.revenueEntry.updateMany({
+            where: { outletId, businessDate, status: 'CONFIRMED' },
+            data: { status: 'SUPERSEDED' },
+          });
+        }
+        await this.prisma.revenueEntry.create({
+          data: {
+            outletId,
+            businessDate,
+            amount: parsed.normalized,
+            source: 'IMPORT',
+            status,
+            enteredByUserId: user.id,
+          },
+        });
+        imported++;
+      } catch (err) {
+        skipped++;
+        errors.push({
+          row: i,
+          storeCode: row.storeCode,
+          reason: err instanceof Error ? err.message : 'Unexpected error',
+        });
+      }
+    }
+
+    return { imported, skipped, errors };
   }
 
   /**
