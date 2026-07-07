@@ -1,13 +1,23 @@
 import {
   Body,
+  ConflictException,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   NotFoundException,
+  Param,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
-import { approveMappingSchema } from '@komuta/shared';
+import {
+  approveMappingSchema,
+  createMappingSchema,
+  updateMappingSchema,
+  type CreateMappingInput,
+  type UpdateMappingInput,
+} from '@komuta/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RequirePermissions } from '../common/require-permissions.decorator.js';
 import { CurrentUser, type AuthUser } from '../common/current-user.decorator.js';
@@ -82,6 +92,78 @@ export class MappingsController {
       });
     }
     return mapping;
+  }
+
+  /** Manually register a sender→outlet mapping (no inbound message needed). */
+  @RequirePermissions('mapping:approve')
+  @Post()
+  async create(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodPipe(createMappingSchema)) body: CreateMappingInput,
+  ) {
+    await this.assertOutletInScope(user, body.outletId);
+    if (body.employeeId) await this.assertEmployeeExists(body.employeeId);
+    const existing = await this.prisma.phoneMapping.findUnique({
+      where: { phoneE164: body.phoneE164 },
+    });
+    if (existing) {
+      throw new ConflictException(
+        `Phone ${body.phoneE164} already has a ${existing.status} mapping (id ${existing.id}); edit or delete it instead`,
+      );
+    }
+    return this.prisma.phoneMapping.create({
+      data: {
+        phoneE164: body.phoneE164,
+        outletId: body.outletId,
+        employeeId: body.employeeId ?? null,
+        status: body.status,
+      },
+      include: { outlet: true, employee: true },
+    });
+  }
+
+  @RequirePermissions('mapping:approve')
+  @Patch(':id')
+  async update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body(new ZodPipe(updateMappingSchema)) body: UpdateMappingInput,
+  ) {
+    const existing = await this.prisma.phoneMapping.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Mapping not found');
+    if (body.outletId) await this.assertOutletInScope(user, body.outletId);
+    if (body.employeeId) await this.assertEmployeeExists(body.employeeId);
+    return this.prisma.phoneMapping.update({
+      where: { id },
+      data: {
+        outletId: body.outletId,
+        employeeId: body.employeeId,
+        status: body.status,
+      },
+      include: { outlet: true, employee: true },
+    });
+  }
+
+  /** Hard delete — inbound history stays in WhatsAppMessage. */
+  @RequirePermissions('mapping:approve')
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    const existing = await this.prisma.phoneMapping.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Mapping not found');
+    return this.prisma.phoneMapping.delete({ where: { id } });
+  }
+
+  private async assertOutletInScope(user: AuthUser, outletId: string): Promise<void> {
+    const outlet = await this.prisma.outlet.findUnique({ where: { id: outletId } });
+    if (!outlet) throw new NotFoundException('Outlet not found');
+    if (!canAccessOutlet(user, outlet)) {
+      throw new ForbiddenException('Outlet outside your scope');
+    }
+  }
+
+  private async assertEmployeeExists(employeeId: string): Promise<void> {
+    const employee = await this.prisma.employee.findUnique({ where: { id: employeeId } });
+    if (!employee) throw new NotFoundException('Employee not found');
   }
 
   @RequirePermissions('mapping:approve')
