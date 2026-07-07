@@ -10,13 +10,12 @@ import { AppShell } from '@/components/AppShell';
 import { Button, Card, CardBody, CardHeader, Field, Input, Select, cn } from '@/components/ui';
 import type { Outlet } from '@/lib/types';
 
-type FormKey = 'payroll' | 'purchases' | 'inventory' | 'student' | 'headcount';
+type FormKey = 'payroll' | 'purchases' | 'inventory' | 'headcount';
 
 const TABS: { key: FormKey; label: string }[] = [
   { key: 'payroll', label: 'Personel Maaşı' },
   { key: 'purchases', label: 'Mal Alımı' },
   { key: 'inventory', label: 'Stok' },
-  { key: 'student', label: 'Öğrenci Sayısı' },
   { key: 'headcount', label: 'Çalışan Sayısı' },
 ];
 
@@ -63,7 +62,6 @@ export default function AccountingPage() {
         {tab === 'payroll' && <PayrollForm outlets={outletOptions} />}
         {tab === 'purchases' && <PurchasesForm outlets={outletOptions} />}
         {tab === 'inventory' && <InventoryForm outlets={outletOptions} />}
-        {tab === 'student' && <StudentForm outlets={outletOptions} />}
         {tab === 'headcount' && <HeadcountForm outlets={outletOptions} />}
       </div>
     </AppShell>
@@ -267,43 +265,6 @@ function InventoryForm({ outlets }: { outlets: Outlet[] }) {
       <Field label="Not (opsiyonel)">
         <Input value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
-    </FormShell>
-  );
-}
-
-function StudentForm({ outlets }: { outlets: Outlet[] }) {
-  const m = useSubmit('/accounting/student-count');
-  const [outletId, setOutletId] = useState('');
-  const [periodMonth, setPeriod] = useState(thisMonth());
-  const [ortaokul, setOrta] = useState('');
-  const [lise, setLise] = useState('');
-
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
-    m.mutate({ outletId, periodMonth, ortaokul: Number(ortaokul), lise: Number(lise) });
-  }
-
-  return (
-    <FormShell
-      title="Öğrenci Sayısı"
-      subtitle="Ortaokul ve Lise öğrenci sayıları"
-      onSubmit={submit}
-      pending={m.isPending}
-      success={m.isSuccess}
-      error={m.isError ? (m.error as Error).message : null}
-    >
-      <OutletField value={outletId} onChange={setOutletId} outlets={outlets} />
-      <Field label="Dönem (Ay)">
-        <Input type="month" value={periodMonth} onChange={(e) => setPeriod(e.target.value)} required />
-      </Field>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Ortaokul">
-          <Input type="number" min={0} value={ortaokul} onChange={(e) => setOrta(e.target.value)} required />
-        </Field>
-        <Field label="Lise">
-          <Input type="number" min={0} value={lise} onChange={(e) => setLise(e.target.value)} required />
-        </Field>
-      </div>
     </FormShell>
   );
 }

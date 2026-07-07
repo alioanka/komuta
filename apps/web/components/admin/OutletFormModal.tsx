@@ -45,6 +45,8 @@ export function OutletFormModal({ open, onClose, outlet, companies, defaultCompa
   const [city, setCity] = useState('');
   const [campus, setCampus] = useState('');
   const [expectsDailyRevenue, setExpectsDailyRevenue] = useState(true);
+  const [studentOrtaokul, setStudentOrtaokul] = useState('');
+  const [studentLise, setStudentLise] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
 
   useEffect(() => {
@@ -59,6 +61,8 @@ export function OutletFormModal({ open, onClose, outlet, companies, defaultCompa
       setCity(outlet.city ?? '');
       setCampus(outlet.campus ?? '');
       setExpectsDailyRevenue(outlet.expectsDailyRevenue);
+      setStudentOrtaokul(outlet.studentOrtaokul != null ? String(outlet.studentOrtaokul) : '');
+      setStudentLise(outlet.studentLise != null ? String(outlet.studentLise) : '');
     } else {
       setCompanyId(defaultCompanyId ?? companies[0]?.id ?? '');
       setBrandId('');
@@ -68,6 +72,8 @@ export function OutletFormModal({ open, onClose, outlet, companies, defaultCompa
       setCity('');
       setCampus('');
       setExpectsDailyRevenue(true);
+      setStudentOrtaokul('');
+      setStudentLise('');
     }
   }, [open, outlet, defaultCompanyId, companies]);
 
@@ -96,6 +102,8 @@ export function OutletFormModal({ open, onClose, outlet, companies, defaultCompa
         city: city.trim() || null,
         campus: campus.trim() || null,
         expectsDailyRevenue,
+        studentOrtaokul: studentOrtaokul.trim() === '' ? null : Number(studentOrtaokul),
+        studentLise: studentLise.trim() === '' ? null : Number(studentLise),
       };
       if (isEdit && outlet) {
         // companyId is immutable after creation — don't send it on PATCH.
@@ -196,6 +204,32 @@ export function OutletFormModal({ open, onClose, outlet, companies, defaultCompa
           </Field>
           <Field label="Kampüs" hint="İsteğe bağlı">
             <Input value={campus} onChange={(e) => setCampus(e.target.value)} placeholder="Örn. Merkez Kampüs" />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field
+            label="Ortaokul Öğrenci Sayısı"
+            hint="İsteğe bağlı — özellikle kantinler için"
+          >
+            <Input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              placeholder="Örn. 1200"
+              value={studentOrtaokul}
+              onChange={(e) => setStudentOrtaokul(e.target.value)}
+            />
+          </Field>
+          <Field label="Lise Öğrenci Sayısı" hint="İsteğe bağlı — özellikle kantinler için">
+            <Input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              placeholder="Örn. 150"
+              value={studentLise}
+              onChange={(e) => setStudentLise(e.target.value)}
+            />
           </Field>
         </div>
 

@@ -117,6 +117,14 @@ export function OutletSettingsTab({ outletId }: { outletId: string }) {
           <Info label="Şehir" value={outlet.city ?? '—'} />
           <Info label="Durum" value={outlet.isActive ? 'Aktif' : 'Pasif'} />
           <Info label="Günlük ciro" value={outlet.expectsDailyRevenue ? 'Beklenir' : 'Beklenmez'} />
+          <Info
+            label="Ortaokul Öğrenci"
+            value={outlet.studentOrtaokul != null ? String(outlet.studentOrtaokul) : '—'}
+          />
+          <Info
+            label="Lise Öğrenci"
+            value={outlet.studentLise != null ? String(outlet.studentLise) : '—'}
+          />
         </CardBody>
       </Card>
 

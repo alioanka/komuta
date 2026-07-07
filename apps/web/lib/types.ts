@@ -94,6 +94,8 @@ export interface Outlet {
   campus: string | null;
   expectsDailyRevenue: boolean;
   isActive: boolean;
+  studentOrtaokul?: number | null;
+  studentLise?: number | null;
   company: { id: string; name: string; slug: string };
   brand: { id: string; name: string } | null;
   aliases: { id: string; alias: string }[];
@@ -216,6 +218,65 @@ export interface UserRow {
 export interface PermissionsMeta {
   permissions: Permission[];
   rolePermissions: Record<Role, Permission[]>;
+}
+
+/* --------------------------------------------------------- Reports --- */
+export interface ReportRevenueRow {
+  key: string;
+  label: string;
+  total: string | number;
+  count: number;
+  avg: string | number;
+}
+
+export interface ReportRevenueResponse {
+  rows: ReportRevenueRow[];
+  totalSum: string | number;
+  totalCount: number;
+}
+
+export interface BranchReportRow {
+  outletId: string;
+  name: string;
+  code: string;
+  company: string;
+  brand: string | null;
+  type: OutletType;
+  studentOrtaokul: number;
+  studentLise: number;
+  studentTotal: number;
+  totalRevenue: string | number;
+  dayCount: number;
+  avgDailyRevenue: string | number;
+}
+
+/* ----------------------------------------------- Revenue import --- */
+export interface RevenueImportRow {
+  date: string;
+  storeCode: string;
+  amount: string;
+}
+
+export interface RevenueImportResult {
+  imported: number;
+  skipped: number;
+  errors: { row: number; storeCode: string; reason: string }[];
+}
+
+/* ------------------------------------------- Dashboard config --- */
+export type DashboardWidgetId =
+  | 'kpis'
+  | 'trend'
+  | 'perCompany'
+  | 'missing'
+  | 'studentVsRevenue'
+  | 'notifications';
+
+export interface DashboardConfig {
+  /** Ordered list of widgets; each carries its own visibility flag. */
+  widgets: { id: DashboardWidgetId; visible: boolean }[];
+  /** Empty string / undefined → all companies. */
+  companyId?: string;
 }
 
 export interface Employee {
