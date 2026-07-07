@@ -21,9 +21,25 @@ export function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
 
+/**
+ * Parse a user-typed money amount in Turkish or Western format
+ * ("73.256,76", "73256,76", "73,256.76", "73256.76") → number, or null.
+ */
+export function parseAmountInput(value: string): number | null {
+  const s = value.trim().replace(/\s/g, '').replace(/(TL|₺)/gi, '');
+  if (!s) return null;
+  const lastComma = s.lastIndexOf(',');
+  const lastDot = s.lastIndexOf('.');
+  const normalized =
+    lastComma > lastDot ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+  const n = Number(normalized);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
 export const MSG = {
   required: 'Bu alan zorunludur.',
   email: 'Geçerli bir e-posta adresi girin.',
   phone: 'Telefonu uluslararası biçimde girin, örn: +905321234567',
   passwordMin: 'Şifre en az 8 karakter olmalıdır.',
+  amount: 'Geçerli bir tutar girin, örn: 73.256,76',
 } as const;

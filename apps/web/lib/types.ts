@@ -106,7 +106,11 @@ export interface RevenueEntry {
   amount: string;
   status: string;
   source: string;
+  note?: string | null;
 }
+
+/** Paginated list response ({items,total}) — some endpoints may return bare arrays. */
+export type Paginated<T> = { items: T[]; total: number };
 
 export interface InventorySnapshot {
   id: string;
