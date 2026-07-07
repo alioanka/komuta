@@ -2,11 +2,13 @@ import { z } from 'zod';
 import {
   OutletType,
   Role,
+  MappingStatus,
   NotificationChannel,
   NotificationEvent,
   TemplateCategory,
   TemplateStatus,
 } from './enums.js';
+import { PERMISSIONS } from './permissions.js';
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '@komuta/config';
 
 /** A YYYY-MM-DD calendar date. */
@@ -42,13 +44,31 @@ export const changePasswordSchema = z.object({
 });
 
 // --- Users ---
+const permissionSchema = z.enum(PERMISSIONS);
+
 export const createUserSchema = z.object({
   email: z.string().email(),
   fullName: z.string().min(2).max(120),
   role: z.nativeEnum(Role),
   password: z.string().min(10).max(200),
+  phoneE164: phoneE164Schema.nullish(),
   scopeCompanyIds: z.array(z.string()).optional(),
   scopeOutletIds: z.array(z.string()).optional(),
+});
+
+export const updateUserSchema = z.object({
+  fullName: z.string().min(2).max(120).optional(),
+  role: z.nativeEnum(Role).optional(),
+  isActive: z.boolean().optional(),
+  phoneE164: phoneE164Schema.nullish(),
+  grantedPermissions: z.array(permissionSchema).optional(),
+  revokedPermissions: z.array(permissionSchema).optional(),
+  scopeCompanyIds: z.array(z.string()).optional(),
+  scopeOutletIds: z.array(z.string()).optional(),
+});
+
+export const resetPasswordSchema = z.object({
+  newPassword: z.string().min(10, 'En az 10 karakter').max(200),
 });
 
 // --- Companies / Brands / Outlets ---
@@ -74,9 +94,41 @@ export const createOutletSchema = z.object({
   expectsDailyRevenue: z.boolean().default(true),
 });
 
+export const updateCompanySchema = z.object({
+  name: z.string().min(2).max(120).optional(),
+  isActive: z.boolean().optional(),
+});
+
+export const updateBrandSchema = z.object({
+  name: z.string().min(2).max(120).optional(),
+});
+
+export const updateOutletSchema = z.object({
+  name: z.string().min(2).max(160).optional(),
+  code: z.string().min(1).max(40).optional(),
+  type: z.nativeEnum(OutletType).optional(),
+  city: z.string().max(80).nullish(),
+  campus: z.string().max(120).nullish(),
+  brandId: z.string().nullish(),
+  expectsDailyRevenue: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+});
+
 export const createAliasSchema = z.object({
   outletId: z.string(),
   alias: z.string().min(1).max(160),
+});
+
+// --- Employees ---
+export const createEmployeeSchema = z.object({
+  fullName: z.string().min(2).max(160),
+  outletId: z.string().nullish(),
+});
+
+export const updateEmployeeSchema = z.object({
+  fullName: z.string().min(2).max(160).optional(),
+  outletId: z.string().nullish(),
+  isActive: z.boolean().optional(),
 });
 
 // --- Revenue ---
@@ -129,6 +181,19 @@ export const approveMappingSchema = z.object({
   outletId: z.string(),
 });
 
+export const createMappingSchema = z.object({
+  phoneE164: phoneE164Schema,
+  outletId: z.string(),
+  employeeId: z.string().nullish(),
+  status: z.nativeEnum(MappingStatus).default(MappingStatus.ACTIVE),
+});
+
+export const updateMappingSchema = z.object({
+  outletId: z.string().nullish(),
+  employeeId: z.string().nullish(),
+  status: z.nativeEnum(MappingStatus).optional(),
+});
+
 // --- Messaging ---
 export const sendMessageSchema = z.object({
   toPhone: phoneE164Schema,
@@ -162,6 +227,14 @@ export const notificationRuleSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CreateUserInput = z.infer<typeof createUserSchema>;
+export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+export type UpdateCompanyInput = z.infer<typeof updateCompanySchema>;
+export type UpdateBrandInput = z.infer<typeof updateBrandSchema>;
+export type UpdateOutletInput = z.infer<typeof updateOutletSchema>;
+export type CreateEmployeeInput = z.infer<typeof createEmployeeSchema>;
+export type UpdateEmployeeInput = z.infer<typeof updateEmployeeSchema>;
+export type CreateMappingInput = z.infer<typeof createMappingSchema>;
+export type UpdateMappingInput = z.infer<typeof updateMappingSchema>;
 export type CreateOutletInput = z.infer<typeof createOutletSchema>;
 export type CreateRevenueInput = z.infer<typeof createRevenueSchema>;
 export type SendMessageInput = z.infer<typeof sendMessageSchema>;
