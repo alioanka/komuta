@@ -94,7 +94,15 @@ pnpm db:migrate             # create/apply migration (dev)
 pnpm db:deploy              # apply migrations (prod)
 pnpm db:seed                # seed demo data (prints login credentials)
 pnpm db:generate            # regenerate Prisma client
+pnpm --filter @komuta/api db:purge-demo -- --dry-run  # preview demo-data removal
+pnpm --filter @komuta/api db:purge-demo               # delete seed/demo data
 ```
+
+`db:purge-demo` removes seed-generated fake data (revenue with no WhatsApp
+message id, null-entered accounting rows, demo mappings/employee/users,
+in-app notifications) while keeping companies, outlets, real users and all
+real WhatsApp-sourced data. In the prod container:
+`docker compose exec -T api npx --yes tsx prisma/purge-demo.ts [--dry-run]`.
 
 Per-package: `pnpm --filter @komuta/<name> <script>`.
 
@@ -131,6 +139,21 @@ message templates are managed via `GET/POST /templates` (+ `POST
   `POST /outlets` (`outlet:create`), `POST /outlets/alias` (`alias:write`).
   Aliases are stored with a Turkish-normalized form for matching.
 - Or add to `apps/api/prisma/seed.ts` and re-seed.
+- **Full admin CRUD** exists for org + users + data (all from the web UI):
+  - Users: `GET/POST/PATCH/DELETE /users`, `POST /users/:id/reset-password`,
+    `GET /users/permissions`; users carry `phoneE164` for WhatsApp alerts;
+    `canAssignRole` blocks privilege escalation; last-OWNER + self-guards.
+  - Company/brand/outlet: `PATCH/DELETE` with 409s while children exist;
+    outlet delete is **soft** when operational data exists (isActive=false),
+    hard otherwise.
+  - Employees: `GET/POST/PATCH/DELETE /employees`.
+  - Mappings: manual `POST/PATCH/DELETE /mappings` in addition to approve/reject.
+  - Data management: `GET /revenue` (filters + `{items,total}` pagination),
+    `PATCH/DELETE /revenue/:id`, plus `GET/PATCH/DELETE /accounting/*/:id`.
+  - Web: `/ayarlar` (users + permission editor), `/firmalar` (company/brand/
+    outlet create-edit-delete), `/sube/[outlet]` tabs Genel / Veriler
+    (editable revenue + accounting) / Şube Ayarları (fields, aliases,
+    employees, WhatsApp numbers, danger zone), `/eslestirme` (full mapping mgmt).
 
 ## Environment variables
 See `.env.example` for the authoritative list. Summary:
