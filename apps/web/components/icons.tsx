@@ -238,6 +238,57 @@ export const IconTag = (p: IconProps) => (
   </svg>
 );
 
+export const IconReport = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M3 3v18h18" />
+    <rect x="7" y="12" width="3" height="6" rx="0.5" />
+    <rect x="12" y="8" width="3" height="10" rx="0.5" />
+    <rect x="17" y="5" width="3" height="13" rx="0.5" />
+  </svg>
+);
+
+export const IconImport = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 3v12" />
+    <path d="M8 11l4 4 4-4" />
+    <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+  </svg>
+);
+
+export const IconDownload = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 3v12" />
+    <path d="M8 11l4 4 4-4" />
+    <path d="M4 21h16" />
+  </svg>
+);
+
+export const IconSliders = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" />
+    <path d="M1 14h6M9 8h6M17 16h6" />
+  </svg>
+);
+
+export const IconArrowUp = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 19V5M5 12l7-7 7 7" />
+  </svg>
+);
+
+export const IconArrowDown = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 5v14M19 12l-7 7-7-7" />
+  </svg>
+);
+
+export const IconEye = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
 export const IconUsers = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />

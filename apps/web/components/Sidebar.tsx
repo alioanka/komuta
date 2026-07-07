@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { Permission } from '@komuta/shared';
 import { brand } from '@komuta/config';
 import { useI18n } from '@/lib/i18n';
+import { useAuth } from '@/lib/auth';
 import { cn } from '@/components/ui';
 import {
   IconOverview,
@@ -16,6 +18,8 @@ import {
   IconSettings,
   IconBell,
   IconClose,
+  IconReport,
+  IconImport,
 } from '@/components/icons';
 
 type NavKey =
@@ -33,6 +37,10 @@ interface NavItem {
   key: NavKey;
   href: string;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  /** Explicit label overrides the i18n catalog (for routes not in `t.nav`). */
+  label?: string;
+  /** When set, the item only renders if the user holds this permission. */
+  perm?: Permission;
 }
 
 interface NavSection {
@@ -50,6 +58,13 @@ const NAV_SECTIONS: NavSection[] = [
       { key: 'messages', href: '/mesajlar', icon: IconMessages },
       { key: 'mapping', href: '/eslestirme', icon: IconMapping },
       { key: 'notifications', href: '/bildirimler', icon: IconBell },
+    ],
+  },
+  {
+    label: 'Analiz', // Analytics
+    items: [
+      { key: 'overview', href: '/raporlar', icon: IconReport, label: 'Raporlar', perm: 'dashboard:read' },
+      { key: 'overview', href: '/iceri-aktar', icon: IconImport, label: 'İçeri Aktar', perm: 'revenue:write' },
     ],
   },
   {
@@ -71,6 +86,7 @@ function isActive(pathname: string, href: string): boolean {
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
   const { t } = useI18n();
+  const { can } = useAuth();
 
   return (
     <>
@@ -108,18 +124,21 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         </div>
 
         <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-3 scrollbar-thin">
-          {NAV_SECTIONS.map((section) => (
+          {NAV_SECTIONS.map((section) => {
+            const items = section.items.filter((item) => !item.perm || can(item.perm));
+            if (items.length === 0) return null;
+            return (
             <div key={section.label}>
               <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                 {section.label}
               </p>
               <div className="space-y-0.5">
-                {section.items.map((item) => {
+                {items.map((item) => {
                   const active = isActive(pathname, item.href);
                   const Icon = item.icon;
                   return (
                     <Link
-                      key={item.key}
+                      key={item.href}
                       href={item.href}
                       onClick={onClose}
                       className={cn(
@@ -143,13 +162,14 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
                           active ? 'text-brand-accent' : 'text-slate-400 group-hover:text-slate-200'
                         }
                       />
-                      {t.nav[item.key]}
+                      {item.label ?? t.nav[item.key]}
                     </Link>
                   );
                 })}
               </div>
             </div>
-          ))}
+            );
+          })}
         </nav>
 
         <div className="px-5 py-4 text-[11px] text-slate-500">
