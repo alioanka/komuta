@@ -8,7 +8,7 @@
 #   4. runner  — minimal runtime image
 #
 # Migrations are NOT run here. Run them separately after `up`:
-#   docker compose exec -T api pnpm --filter @komuta/api prisma migrate deploy
+#   docker compose exec -T api npx --yes prisma@5.22.0 migrate deploy --schema prisma/schema.prisma
 #
 # Build context is the repo root (see docker-compose.yml).
 # ----------------------------------------------------------------------------

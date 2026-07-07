@@ -8,7 +8,7 @@
 #   cp .env.example .env   # then fill in real secrets
 #   docker compose build
 #   docker compose up -d
-#   docker compose exec -T api pnpm --filter @komuta/api prisma migrate deploy
+#   docker compose exec -T api npx --yes prisma@5.22.0 migrate deploy --schema prisma/schema.prisma
 #
 # All app services read their configuration from .env (env_file). Database
 # credentials are also injected into the postgres container via ${VAR}.

@@ -220,20 +220,22 @@ docker compose ps
 
 ## 5. Run database migrations & seed (first deploy only)
 
-Apply migrations **inside the running api container** (note: `db:deploy` uses
-`prisma migrate deploy`, the non-interactive production command):
+The production api image is a slim deploy **without pnpm** (and the image runs
+Node 20, which current pnpm releases no longer support) — use `npx` inside the
+container instead:
 
 ```bash
-docker compose exec api pnpm db:deploy
+docker compose exec -T api npx --yes prisma@5.22.0 migrate deploy --schema prisma/schema.prisma
 ```
 
 Seed the initial companies/outlets/users **once**:
 
 ```bash
-docker compose exec api pnpm db:seed
+docker compose exec -T api npx --yes tsx prisma/seed.ts
 ```
 
-> On subsequent updates, run `db:deploy` (migrations) but **do not** re-seed.
+> On subsequent updates, re-run the migrate command (idempotent) but **do not**
+> re-seed.
 
 ---
 

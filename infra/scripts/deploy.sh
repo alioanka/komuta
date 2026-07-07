@@ -29,7 +29,7 @@ echo "==> Waiting for the api container to be up before migrating"
 sleep 5
 
 echo "==> Applying database migrations"
-docker compose exec -T api pnpm --filter @komuta/api prisma migrate deploy
+docker compose exec -T api npx --yes prisma@5.22.0 migrate deploy --schema prisma/schema.prisma
 
 echo "==> Pruning dangling images"
 docker image prune -f
