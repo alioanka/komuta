@@ -22,7 +22,7 @@ WORKDIR /app
 
 # ---- deps: install the whole workspace ----
 FROM base AS deps
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json tsconfig.base.json ./
 # Shared workspace packages the api depends on.
 COPY packages ./packages
 # The Prisma schema + seed live in apps/api/prisma (copied with the app below).
@@ -35,6 +35,9 @@ RUN pnpm --filter @komuta/api prisma generate
 RUN pnpm turbo run build --filter=@komuta/api
 # Create a production-only deployment of @komuta/api (with prod deps + dist).
 RUN pnpm --filter @komuta/api deploy --prod --legacy /prod/api
+# `pnpm deploy` does not carry the generated Prisma client — regenerate it
+# inside the deployed tree (plain node_modules layout) so runtime resolves it.
+RUN cd /prod/api && npx --yes prisma@5.22.0 generate --schema prisma/schema.prisma
 
 # ---- runner: minimal runtime ----
 FROM base AS runner

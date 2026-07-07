@@ -20,7 +20,7 @@ WORKDIR /app
 
 # ---- deps ----
 FROM base AS deps
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/web ./apps/web
 RUN pnpm install --frozen-lockfile
@@ -28,6 +28,10 @@ RUN pnpm install --frozen-lockfile
 # ---- build ----
 FROM deps AS build
 ENV NEXT_TELEMETRY_DISABLED=1
+# NEXT_PUBLIC_* vars are inlined into the client bundle at BUILD time — the
+# public API base URL must be provided here (see docker-compose.yml build args).
+ARG NEXT_PUBLIC_API_URL=http://localhost:4000
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN pnpm turbo run build --filter=@komuta/web
 
 # ---- runner: standalone Next.js server ----

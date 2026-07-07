@@ -18,7 +18,7 @@ WORKDIR /app
 
 # ---- deps ----
 FROM base AS deps
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json tsconfig.base.json ./
 COPY packages ./packages
 # The Prisma schema lives in apps/api/prisma; the worker shares the generated client.
 COPY apps/api ./apps/api
@@ -31,6 +31,10 @@ FROM deps AS build
 RUN pnpm --filter @komuta/api prisma generate
 RUN pnpm turbo run build --filter=@komuta/worker
 RUN pnpm --filter @komuta/worker deploy --prod --legacy /prod/worker
+# Regenerate the Prisma client inside the deployed tree (the schema lives in
+# apps/api; `pnpm deploy` does not carry the generated client).
+RUN cp -r /app/apps/api/prisma /prod/worker/prisma \
+ && cd /prod/worker && npx --yes prisma@5.22.0 generate --schema prisma/schema.prisma
 
 # ---- runner ----
 FROM base AS runner

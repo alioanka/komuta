@@ -94,6 +94,10 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        # Inlined into the browser bundle at build time. Public API base —
+        # nginx proxies https://<domain>/api/ → api:4000 (prefix stripped).
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://panora.live/api}
     image: komuta-web
     container_name: komuta-web
     restart: unless-stopped
