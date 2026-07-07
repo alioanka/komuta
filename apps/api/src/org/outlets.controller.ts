@@ -51,6 +51,8 @@ export class OutletsController {
       city?: string;
       campus?: string;
       expectsDailyRevenue: boolean;
+      studentOrtaokul?: number | null;
+      studentLise?: number | null;
     },
   ) {
     return this.prisma.outlet.create({ data: body });
@@ -124,6 +126,8 @@ export class OutletsController {
         brandId: body.brandId,
         expectsDailyRevenue: body.expectsDailyRevenue,
         isActive: body.isActive,
+        studentOrtaokul: body.studentOrtaokul,
+        studentLise: body.studentLise,
       },
       include: { company: true, brand: true, aliases: true },
     });
