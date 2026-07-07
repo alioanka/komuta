@@ -93,6 +93,8 @@ export const createOutletSchema = z.object({
   city: z.string().max(80).optional(),
   campus: z.string().max(120).optional(),
   expectsDailyRevenue: z.boolean().default(true),
+  studentOrtaokul: z.coerce.number().int().min(0).nullish(),
+  studentLise: z.coerce.number().int().min(0).nullish(),
 });
 
 export const updateCompanySchema = z.object({
@@ -113,6 +115,8 @@ export const updateOutletSchema = z.object({
   brandId: z.string().nullish(),
   expectsDailyRevenue: z.boolean().optional(),
   isActive: z.boolean().optional(),
+  studentOrtaokul: z.coerce.number().int().min(0).nullish(),
+  studentLise: z.coerce.number().int().min(0).nullish(),
 });
 
 export const createAliasSchema = z.object({
@@ -152,6 +156,51 @@ export const listRevenueQuerySchema = paginationSchema.extend({
   status: z.nativeEnum(EntryStatus).optional(),
   from: businessDateSchema.optional(),
   to: businessDateSchema.optional(),
+});
+
+// --- Historical revenue import ---
+export const revenueImportRowSchema = z.object({
+  date: businessDateSchema,
+  storeCode: z.string().min(1).max(40),
+  amount: z.union([z.string(), z.number()]),
+});
+
+export const revenueImportSchema = z.object({
+  rows: z.array(revenueImportRowSchema).min(1).max(5000),
+  defaultStatus: z.nativeEnum(EntryStatus).default(EntryStatus.CONFIRMED),
+});
+
+// --- Reports ---
+export const reportGroupBy = z.enum(['day', 'month', 'outlet', 'company', 'brand']);
+
+export const reportsRevenueQuerySchema = z.object({
+  companyId: z.string().optional(),
+  brandId: z.string().optional(),
+  outletId: z.string().optional(),
+  type: z.nativeEnum(OutletType).optional(),
+  from: businessDateSchema.optional(),
+  to: businessDateSchema.optional(),
+  status: z.nativeEnum(EntryStatus).default(EntryStatus.CONFIRMED),
+  groupBy: reportGroupBy.default('day'),
+});
+
+export const reportsBranchesQuerySchema = z.object({
+  companyId: z.string().optional(),
+  brandId: z.string().optional(),
+  outletId: z.string().optional(),
+  type: z.nativeEnum(OutletType).optional(),
+  from: businessDateSchema.optional(),
+  to: businessDateSchema.optional(),
+  status: z.nativeEnum(EntryStatus).default(EntryStatus.CONFIRMED),
+});
+
+// --- Per-user dashboard config (opaque widget layout/filter blob) ---
+export const dashboardConfigSchema = z.object({
+  config: z
+    .record(z.string(), z.unknown())
+    .refine((v) => JSON.stringify(v).length <= 32_768, {
+      message: 'Config exceeds 32KB',
+    }),
 });
 
 // --- Monthly accounting entries ---
@@ -291,4 +340,10 @@ export type UpdateHeadcountInput = z.infer<typeof updateHeadcountSchema>;
 export type CreateOutletInput = z.infer<typeof createOutletSchema>;
 export type CreateRevenueInput = z.infer<typeof createRevenueSchema>;
 export type SendMessageInput = z.infer<typeof sendMessageSchema>;
+export type RevenueImportRow = z.infer<typeof revenueImportRowSchema>;
+export type RevenueImportInput = z.infer<typeof revenueImportSchema>;
+export type ReportGroupBy = z.infer<typeof reportGroupBy>;
+export type ReportsRevenueQuery = z.infer<typeof reportsRevenueQuerySchema>;
+export type ReportsBranchesQuery = z.infer<typeof reportsBranchesQuerySchema>;
+export type DashboardConfigInput = z.infer<typeof dashboardConfigSchema>;
 export type NotificationRuleInput = z.infer<typeof notificationRuleSchema>;
