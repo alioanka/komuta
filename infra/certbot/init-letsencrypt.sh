@@ -40,11 +40,9 @@ if [ -z "$DOMAIN" ] || [ -z "$EMAIL" ] || [[ "$EMAIL" == *"example.com"* ]]; the
   exit 1
 fi
 
-echo "### Downloading recommended TLS parameters ..."
-$COMPOSE run --rm --entrypoint "\
-  sh -c 'mkdir -p /etc/letsencrypt && \
-  wget -qO /etc/letsencrypt/options-ssl-nginx.conf https://raw.githubusercontent.com/certbot/certbot/main/certbot-nginx/src/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf && \
-  wget -qO /etc/letsencrypt/ssl-dhparams.pem https://raw.githubusercontent.com/certbot/certbot/main/certbot/certbot/ssl-dhparams.pem'" certbot || true
+# (Intentionally no options-ssl-nginx.conf/ssl-dhparams.pem download here —
+#  infra/nginx/komuta.conf defines its own TLS settings and does not include
+#  those files.)
 
 echo "### Creating dummy certificate for $DOMAIN ..."
 CERT_PATH="/etc/letsencrypt/live/$DOMAIN"
