@@ -178,8 +178,10 @@ list — the most important production changes:
 |---------------------------------|--------------------------------------------------------------|
 | `NODE_ENV`                      | `production`                                                  |
 | `APP_URL`                       | `https://panora.live`                                         |
-| `API_URL`                       | `https://panora.live` (api is reached via `/api`)            |
+| `API_URL`                       | `https://panora.live/api`                                     |
+| `NEXT_PUBLIC_API_URL`           | `https://panora.live/api` — **inlined into the web bundle at build time**; changing it requires `docker compose build web` again |
 | `CORS_ORIGIN`                   | `https://panora.live`                                        |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | strong password; must match `DATABASE_URL` |
 | `COOKIE_DOMAIN`                 | `.panora.live`                                                |
 | `DATABASE_URL`                  | point host at the compose service, e.g. `...@postgres:5432/...` |
 | `REDIS_URL`                     | `redis://redis:6379`                                         |

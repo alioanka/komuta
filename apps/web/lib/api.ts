@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * Runtime API client. The base URL is read from NEXT_PUBLIC_API_URL at runtime
- * (NOT at build time) so `next build` never needs the API. All calls go through
- * the browser; nothing here runs during the build.
+ * Browser API client. NEXT_PUBLIC_API_URL is inlined into the client bundle at
+ * BUILD time (pass it as a Docker build arg in production — see
+ * docker-compose.yml). `next build` itself never calls the API; all requests
+ * happen in the browser at runtime.
  */
 
 export function apiBaseUrl(): string {
