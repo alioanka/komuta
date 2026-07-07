@@ -3,15 +3,18 @@
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import { useAuth } from '@/lib/auth';
 import { AppShell } from '@/components/AppShell';
 import { RevenueAreaChart } from '@/components/Charts';
 import { DataTable, type Column } from '@/components/DataTable';
-import { Badge, Card, CardBody, CardHeader, EmptyState, ErrorState, Skeleton } from '@/components/ui';
+import { Badge, Card, CardBody, CardHeader, EmptyState, ErrorState, Skeleton, cn } from '@/components/ui';
+import { OutletSettingsTab } from '@/components/admin/OutletSettingsTab';
+import { OutletDataTab } from '@/components/admin/OutletDataTab';
 import { formatDate, formatMoney, formatMonth, formatNumber } from '@/lib/format';
 import { entryStatusLabel, outletTypeLabel } from '@/lib/labels';
 import type {
@@ -24,10 +27,15 @@ import type {
   StudentCount,
 } from '@/lib/types';
 
+type Tab = 'genel' | 'ayarlar' | 'veriler';
+
 export default function OutletDetailPage() {
   const { t } = useI18n();
+  const { can } = useAuth();
   const params = useParams<{ outlet: string }>();
   const outletId = params.outlet;
+  const [tab, setTab] = useState<Tab>('genel');
+  const canManage = can('outlet:update') || can('outlet:read');
 
   const detail = useQuery({
     queryKey: ['outlet', outletId],
@@ -130,6 +138,33 @@ export default function OutletDetailPage() {
             </CardBody>
           </Card>
 
+          {/* Tabs */}
+          <div className="flex gap-1 border-b border-slate-200">
+            {([
+              ['genel', 'Genel'],
+              ['veriler', 'Veriler'],
+              ['ayarlar', 'Şube Ayarları'],
+            ] as [Tab, string][]).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className={cn(
+                  '-mb-px border-b-2 px-4 py-2 text-sm font-medium transition',
+                  tab === key
+                    ? 'border-brand text-brand'
+                    : 'border-transparent text-slate-500 hover:text-slate-800',
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {tab === 'veriler' && <OutletDataTab outletId={outletId} />}
+          {tab === 'ayarlar' && canManage && <OutletSettingsTab outletId={outletId} />}
+
+          {tab === 'genel' && (
+          <>
           {/* Revenue trend */}
           <Card>
             <CardHeader
@@ -184,6 +219,8 @@ export default function OutletDetailPage() {
             <CardHeader title={`Son ${t.metrics.revenue} kayıtları`} />
             <DataTable columns={revenueCols} rows={data.revenue.slice(0, 20)} getRowKey={(r) => r.id} empty="Kayıt yok." />
           </Card>
+          </>
+          )}
         </div>
       )}
     </AppShell>
