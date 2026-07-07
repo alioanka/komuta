@@ -14,11 +14,30 @@ export class DashboardService {
     return dateOnly(businessDateInTz(new Date(), DEFAULT_TIMEZONE));
   }
 
-  /** Global KPI overview (scope-aware). */
-  async overview(user: AuthUser) {
+  /** Read the current user's opaque dashboard config blob (or null). */
+  async getConfig(user: AuthUser): Promise<unknown> {
+    const row = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      select: { dashboardConfig: true },
+    });
+    return row?.dashboardConfig ?? null;
+  }
+
+  /** Persist the current user's opaque dashboard config blob. */
+  async setConfig(user: AuthUser, config: Record<string, unknown>): Promise<unknown> {
+    const row = await this.prisma.user.update({
+      where: { id: user.id },
+      data: { dashboardConfig: config as Prisma.InputJsonValue },
+      select: { dashboardConfig: true },
+    });
+    return row.dashboardConfig ?? null;
+  }
+
+  /** Global KPI overview (scope-aware). Optionally narrowed to one company. */
+  async overview(user: AuthUser, companyId?: string) {
     const outletWhere = outletScopeWhere(user);
     const outlets = await this.prisma.outlet.findMany({
-      where: { isActive: true, ...outletWhere },
+      where: { isActive: true, ...outletWhere, ...(companyId ? { companyId } : {}) },
       select: { id: true, companyId: true, expectsDailyRevenue: true },
     });
     const outletIds = outlets.map((o) => o.id);
