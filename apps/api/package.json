@@ -10,7 +10,8 @@
     "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
     "lint": "eslint \"src/**/*.ts\"",
     "test": "vitest run",
-    "prisma": "prisma"
+    "prisma": "prisma",
+    "db:purge-demo": "tsx prisma/purge-demo.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
